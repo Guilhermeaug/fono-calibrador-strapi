@@ -1,0 +1,28 @@
+{
+  "kind": "collectionType",
+  "collectionName": "user_sessions_progress",
+  "info": {
+    "singularName": "user-session-progress",
+    "pluralName": "user-sessions-progress",
+    "displayName": "Progresso na Sessão",
+    "description": ""
+  },
+  "options": {
+    "draftAndPublish": true
+  },
+  "pluginOptions": {},
+  "attributes": {
+    "assessmentResults": {
+      "displayName": "Resultados",
+      "type": "component",
+      "repeatable": false,
+      "component": "general.resultados"
+    },
+    "trainingResults": {
+      "type": "component",
+      "repeatable": false,
+      "component": "general.resultados",
+      "required": false
+    }
+  }
+}

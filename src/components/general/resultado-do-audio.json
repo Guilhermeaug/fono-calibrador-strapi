@@ -1,0 +1,28 @@
+{
+  "collectionName": "components_general_resultado_do_audios",
+  "info": {
+    "displayName": "ResultadoDoAudio",
+    "icon": "brush",
+    "description": ""
+  },
+  "options": {},
+  "attributes": {
+    "identifier": {
+      "type": "string",
+      "required": true
+    },
+    "answer": {
+      "type": "integer",
+      "required": true,
+      "max": 100,
+      "min": 0
+    },
+    "duration": {
+      "type": "integer",
+      "default": 0
+    },
+    "numberOfAttempts": {
+      "type": "integer"
+    }
+  }
+}

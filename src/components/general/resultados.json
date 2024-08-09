@@ -1,0 +1,21 @@
+{
+  "collectionName": "components_general_resultados",
+  "info": {
+    "displayName": "Resultados",
+    "icon": "cup",
+    "description": ""
+  },
+  "options": {},
+  "attributes": {
+    "duration": {
+      "type": "integer",
+      "default": 0
+    },
+    "audios": {
+      "displayName": "ResultadoDoAudio",
+      "type": "component",
+      "repeatable": true,
+      "component": "general.resultado-do-audio"
+    }
+  }
+}

@@ -1,0 +1,58 @@
+{
+  "kind": "collectionType",
+  "collectionName": "programs",
+  "info": {
+    "singularName": "program",
+    "pluralName": "programs",
+    "displayName": "Programa",
+    "description": ""
+  },
+  "options": {
+    "draftAndPublish": true
+  },
+  "pluginOptions": {},
+  "attributes": {
+    "assessment": {
+      "type": "component",
+      "repeatable": true,
+      "component": "general.audio",
+      "required": true,
+      "min": 1
+    },
+    "training": {
+      "type": "component",
+      "repeatable": true,
+      "component": "general.audio",
+      "required": true,
+      "min": 1
+    },
+    "roughnessAnchor": {
+      "type": "component",
+      "repeatable": true,
+      "component": "general.audio"
+    },
+    "breathinessAnchor": {
+      "type": "component",
+      "repeatable": true,
+      "component": "general.audio"
+    },
+    "numberOfSessions": {
+      "type": "integer",
+      "default": 6,
+      "required": true
+    },
+    "sessionsThreshold": {
+      "type": "customField",
+      "options": [
+        "70",
+        "75",
+        "80",
+        "85",
+        "90",
+        "95",
+        "100"
+      ],
+      "customField": "plugin::multi-select.multi-select"
+    }
+  }
+}

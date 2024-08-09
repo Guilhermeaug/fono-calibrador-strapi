@@ -1,0 +1,31 @@
+{
+  "kind": "collectionType",
+  "collectionName": "users_progress",
+  "info": {
+    "singularName": "user-progress",
+    "pluralName": "users-progress",
+    "displayName": "Progresso do Usuário",
+    "description": ""
+  },
+  "options": {
+    "draftAndPublish": true
+  },
+  "pluginOptions": {},
+  "attributes": {
+    "program": {
+      "type": "relation",
+      "relation": "oneToOne",
+      "target": "api::program.program"
+    },
+    "user": {
+      "type": "relation",
+      "relation": "oneToOne",
+      "target": "plugin::users-permissions.user"
+    },
+    "sessions": {
+      "type": "relation",
+      "relation": "oneToMany",
+      "target": "api::user-session-progress.user-session-progress"
+    }
+  }
+}
