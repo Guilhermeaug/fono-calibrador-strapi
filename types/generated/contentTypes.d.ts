@@ -742,7 +742,6 @@ export interface PluginUsersPermissionsUser extends Schema.CollectionType {
   };
   options: {
     draftAndPublish: false;
-    timestamps: true;
   };
   attributes: {
     username: Attribute.String &
@@ -766,10 +765,21 @@ export interface PluginUsersPermissionsUser extends Schema.CollectionType {
     confirmationToken: Attribute.String & Attribute.Private;
     confirmed: Attribute.Boolean & Attribute.DefaultTo<false>;
     blocked: Attribute.Boolean & Attribute.DefaultTo<false>;
+    hasAcceptedTerms: Attribute.Boolean &
+      Attribute.Required &
+      Attribute.DefaultTo<false>;
+    hasCompletedPac: Attribute.Boolean &
+      Attribute.Required &
+      Attribute.DefaultTo<false>;
     role: Attribute.Relation<
       'plugin::users-permissions.user',
       'manyToOne',
       'plugin::users-permissions.role'
+    >;
+    additionalData: Attribute.Relation<
+      'plugin::users-permissions.user',
+      'oneToOne',
+      'api::additional-data.additional-data'
     >;
     createdAt: Attribute.DateTime;
     updatedAt: Attribute.DateTime;
@@ -781,6 +791,57 @@ export interface PluginUsersPermissionsUser extends Schema.CollectionType {
       Attribute.Private;
     updatedBy: Attribute.Relation<
       'plugin::users-permissions.user',
+      'oneToOne',
+      'admin::user'
+    > &
+      Attribute.Private;
+  };
+}
+
+export interface ApiAdditionalDataAdditionalData extends Schema.CollectionType {
+  collectionName: 'additional_datas';
+  info: {
+    singularName: 'additional-data';
+    pluralName: 'additional-datas';
+    displayName: 'Dados Adicionais';
+    description: '';
+  };
+  options: {
+    draftAndPublish: false;
+  };
+  attributes: {
+    name: Attribute.String;
+    birthDate: Attribute.String;
+    isMusician: Attribute.Boolean;
+    musicianType: Attribute.String;
+    musicianRole: Attribute.String;
+    musicianTime: Attribute.String;
+    job: Attribute.String;
+    workUniversity: Attribute.String;
+    university: Attribute.String;
+    courseLevel: Attribute.String;
+    voiceAreaDisciplines: Attribute.Boolean;
+    graduationPeriod: Attribute.String;
+    hasExperienceInAuditoryPerceptualAssessment: Attribute.Boolean;
+    auditoryPerceptualAssessmentTime: Attribute.String;
+    isVoiceSpecialist: Attribute.Boolean;
+    auditoryPerceptualAssessmentExperience: Attribute.String;
+    isAuditoryPerceptualAssessmentTrained: Attribute.Boolean;
+    hasMasterDegree: Attribute.Boolean;
+    hasDoctorateDegree: Attribute.Boolean;
+    hasResearchExperience: Attribute.Boolean;
+    hasAcademicArticle: Attribute.Boolean;
+    hearing: Attribute.String;
+    createdAt: Attribute.DateTime;
+    updatedAt: Attribute.DateTime;
+    createdBy: Attribute.Relation<
+      'api::additional-data.additional-data',
+      'oneToOne',
+      'admin::user'
+    > &
+      Attribute.Private;
+    updatedBy: Attribute.Relation<
+      'api::additional-data.additional-data',
       'oneToOne',
       'admin::user'
     > &
@@ -853,7 +914,7 @@ export interface ApiUserProgressUserProgress extends Schema.CollectionType {
     description: '';
   };
   options: {
-    draftAndPublish: true;
+    draftAndPublish: false;
   };
   attributes: {
     program: Attribute.Relation<
@@ -871,9 +932,11 @@ export interface ApiUserProgressUserProgress extends Schema.CollectionType {
       'oneToMany',
       'api::user-session-progress.user-session-progress'
     >;
+    status: Attribute.Enumeration<['READY', 'WAITING_TIME', 'DONE']> &
+      Attribute.Required &
+      Attribute.DefaultTo<'READY'>;
     createdAt: Attribute.DateTime;
     updatedAt: Attribute.DateTime;
-    publishedAt: Attribute.DateTime;
     createdBy: Attribute.Relation<
       'api::user-progress.user-progress',
       'oneToOne',
@@ -899,14 +962,42 @@ export interface ApiUserSessionProgressUserSessionProgress
     description: '';
   };
   options: {
-    draftAndPublish: true;
+    draftAndPublish: false;
   };
   attributes: {
-    assessmentResults: Attribute.Component<'general.resultados'>;
-    trainingResults: Attribute.Component<'general.resultados'>;
+    assessmentRoughnessResults: Attribute.Component<
+      'general.resultado-do-audio',
+      true
+    >;
+    assessmentBreathinessResults: Attribute.Component<
+      'general.resultado-do-audio',
+      true
+    >;
+    trainingRoughnessResults: Attribute.Component<
+      'general.resultado-do-audio',
+      true
+    >;
+    trainingBreathinessResults: Attribute.Component<
+      'general.resultado-do-audio',
+      true
+    >;
+    assessmentStatus: Attribute.Enumeration<
+      ['NOT_NEEDED', 'WAITING', 'READY', 'DONE']
+    > &
+      Attribute.Required &
+      Attribute.DefaultTo<'NOT_NEEDED'>;
+    trainingRoughnessStatus: Attribute.Enumeration<
+      ['NOT_NEEDED', 'WAITING', 'READY', 'DONE']
+    > &
+      Attribute.Required &
+      Attribute.DefaultTo<'WAITING'>;
+    trainingBreathinessStatus: Attribute.Enumeration<
+      ['NOT_NEEDED', 'WAITING', 'READY', 'DONE']
+    > &
+      Attribute.Required &
+      Attribute.DefaultTo<'WAITING'>;
     createdAt: Attribute.DateTime;
     updatedAt: Attribute.DateTime;
-    publishedAt: Attribute.DateTime;
     createdBy: Attribute.Relation<
       'api::user-session-progress.user-session-progress',
       'oneToOne',
@@ -940,6 +1031,7 @@ declare module '@strapi/types' {
       'plugin::users-permissions.permission': PluginUsersPermissionsPermission;
       'plugin::users-permissions.role': PluginUsersPermissionsRole;
       'plugin::users-permissions.user': PluginUsersPermissionsUser;
+      'api::additional-data.additional-data': ApiAdditionalDataAdditionalData;
       'api::program.program': ApiProgramProgram;
       'api::user-progress.user-progress': ApiUserProgressUserProgress;
       'api::user-session-progress.user-session-progress': ApiUserSessionProgressUserSessionProgress;

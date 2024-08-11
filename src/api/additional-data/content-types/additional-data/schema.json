@@ -1,0 +1,82 @@
+{
+  "kind": "collectionType",
+  "collectionName": "additional_datas",
+  "info": {
+    "singularName": "additional-data",
+    "pluralName": "additional-datas",
+    "displayName": "Dados Adicionais",
+    "description": ""
+  },
+  "options": {
+    "draftAndPublish": false
+  },
+  "pluginOptions": {},
+  "attributes": {
+    "name": {
+      "type": "string"
+    },
+    "birthDate": {
+      "type": "string"
+    },
+    "isMusician": {
+      "type": "boolean"
+    },
+    "musicianType": {
+      "type": "string"
+    },
+    "musicianRole": {
+      "type": "string"
+    },
+    "musicianTime": {
+      "type": "string"
+    },
+    "job": {
+      "type": "string"
+    },
+    "workUniversity": {
+      "type": "string"
+    },
+    "university": {
+      "type": "string"
+    },
+    "courseLevel": {
+      "type": "string"
+    },
+    "voiceAreaDisciplines": {
+      "type": "boolean"
+    },
+    "graduationPeriod": {
+      "type": "string"
+    },
+    "hasExperienceInAuditoryPerceptualAssessment": {
+      "type": "boolean"
+    },
+    "auditoryPerceptualAssessmentTime": {
+      "type": "string"
+    },
+    "isVoiceSpecialist": {
+      "type": "boolean"
+    },
+    "auditoryPerceptualAssessmentExperience": {
+      "type": "string"
+    },
+    "isAuditoryPerceptualAssessmentTrained": {
+      "type": "boolean"
+    },
+    "hasMasterDegree": {
+      "type": "boolean"
+    },
+    "hasDoctorateDegree": {
+      "type": "boolean"
+    },
+    "hasResearchExperience": {
+      "type": "boolean"
+    },
+    "hasAcademicArticle": {
+      "type": "boolean"
+    },
+    "hearing": {
+      "type": "string"
+    }
+  }
+}

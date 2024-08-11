@@ -23,6 +23,9 @@
     },
     "numberOfAttempts": {
       "type": "integer"
+    },
+    "score": {
+      "type": "decimal"
     }
   }
 }

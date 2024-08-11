@@ -1,18 +1,5 @@
 import type { Schema, Attribute } from '@strapi/strapi';
 
-export interface GeneralResultados extends Schema.Component {
-  collectionName: 'components_general_resultados';
-  info: {
-    displayName: 'Resultados';
-    icon: 'cup';
-    description: '';
-  };
-  attributes: {
-    duration: Attribute.Integer & Attribute.DefaultTo<0>;
-    audios: Attribute.Component<'general.resultado-do-audio', true>;
-  };
-}
-
 export interface GeneralResultadoDoAudio extends Schema.Component {
   collectionName: 'components_general_resultado_do_audios';
   info: {
@@ -33,6 +20,7 @@ export interface GeneralResultadoDoAudio extends Schema.Component {
       >;
     duration: Attribute.Integer & Attribute.DefaultTo<0>;
     numberOfAttempts: Attribute.Integer;
+    score: Attribute.Decimal;
   };
 }
 
@@ -266,7 +254,6 @@ export interface GeneralAudio extends Schema.Component {
 declare module '@strapi/types' {
   export module Shared {
     export interface Components {
-      'general.resultados': GeneralResultados;
       'general.resultado-do-audio': GeneralResultadoDoAudio;
       'general.audio': GeneralAudio;
     }

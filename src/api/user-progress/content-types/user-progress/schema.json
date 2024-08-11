@@ -8,7 +8,7 @@
     "description": ""
   },
   "options": {
-    "draftAndPublish": true
+    "draftAndPublish": false
   },
   "pluginOptions": {},
   "attributes": {
@@ -26,6 +26,16 @@
       "type": "relation",
       "relation": "oneToMany",
       "target": "api::user-session-progress.user-session-progress"
+    },
+    "status": {
+      "type": "enumeration",
+      "enum": [
+        "READY",
+        "WAITING_TIME",
+        "DONE"
+      ],
+      "default": "READY",
+      "required": true
     }
   }
 }

@@ -8,21 +8,47 @@
     "description": ""
   },
   "options": {
-    "draftAndPublish": true
+    "draftAndPublish": false
   },
   "pluginOptions": {},
   "attributes": {
-    "assessmentResults": {
-      "displayName": "Resultados",
+    "assessmentRoughnessResults": {
       "type": "component",
-      "repeatable": false,
-      "component": "general.resultados"
+      "repeatable": true,
+      "component": "general.resultado-do-audio"
     },
-    "trainingResults": {
+    "assessmentBreathinessResults": {
       "type": "component",
-      "repeatable": false,
-      "component": "general.resultados",
-      "required": false
+      "repeatable": true,
+      "component": "general.resultado-do-audio"
+    },
+    "trainingRoughnessResults": {
+      "type": "component",
+      "repeatable": true,
+      "component": "general.resultado-do-audio"
+    },
+    "trainingBreathinessResults": {
+      "type": "component",
+      "repeatable": true,
+      "component": "general.resultado-do-audio"
+    },
+    "assessmentStatus": {
+      "type": "enumeration",
+      "enum": ["NOT_NEEDED", "WAITING", "READY", "DONE"],
+      "default": "NOT_NEEDED",
+      "required": true
+    },
+    "trainingRoughnessStatus": {
+      "type": "enumeration",
+      "enum": ["NOT_NEEDED", "WAITING", "READY", "DONE"],
+      "required": true,
+      "default": "WAITING"
+    },
+    "trainingBreathinessStatus": {
+      "type": "enumeration",
+      "enum": ["NOT_NEEDED", "WAITING", "READY", "DONE"],
+      "default": "WAITING",
+      "required": true
     }
   }
 }

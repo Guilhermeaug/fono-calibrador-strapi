@@ -5,16 +5,13 @@ module.exports = {
     const answerService = strapi.services["api::answer.answer"];
 
     const input = ctx.request.body;
-
     if (
       !input.programId ||
-      !input.section ||
       !input.feature ||
       !input.fileIdentifier ||
-      !input.answer === null ||
-      !input.session === null ||
-      !["roughness", "breathiness"].includes(input.feature) ||
-      !["assessment", "training"].includes(input.section)
+      input.answer === null ||
+      input.session === null ||
+      !["roughness", "breathiness"].includes(input.feature)
     ) {
       ctx.status = 400;
       ctx.body = {
@@ -23,15 +20,35 @@ module.exports = {
       return;
     }
 
-    const { programId, section, feature, fileIdentifier, answer, session } = input;
+    const { programId, feature, fileIdentifier, answer, session } = input;
+
+    const program = await strapi.entityService.findOne(
+      "api::program.program",
+      programId,
+      {
+        populate: {
+          training: {
+            populate: ["file"],
+          },
+        },
+      }
+    );
+    if (!program) {
+      ctx.status = 400;
+      ctx.body = {
+        error: "Program not found",
+      };
+    }
+
+    const threshold = program.sessionsThreshold[session - 1]
+    const referenceValues = program.training
+      .find((f) => f.identifier === fileIdentifier)[feature]
+      .map((v) => parseInt(v, 10));
 
     const result = await answerService.computeScore({
-      programId,
-      section,
-      feature,
-      fileIdentifier,
       answer,
-      session
+      values: referenceValues,
+      threshold,
     });
 
     if (result === null) {

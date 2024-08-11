@@ -57,35 +57,11 @@ function calculate(values, answer) {
 }
 
 module.exports = () => ({
-  async computeScore({
-    programId,
-    section,
-    feature,
-    fileIdentifier,
+  computeScore({
     answer,
-    session,
+    values,
+    threshold = 100
   }) {
-    const program = await strapi.entityService.findOne(
-      "api::program.program",
-      programId,
-      {
-        populate: {
-          [section]: {
-            populate: ["file"],
-          },
-        },
-      }
-    );
-
-    if (!program) {
-      return null;
-    }
-
-    const threshold = program.sessionsThreshold[session - 1];
-    const values = program[section]
-      .find((f) => f.identifier === fileIdentifier)
-      [feature].map((f) => parseInt(f, 10));
-
     const max = ss.max(values);
     const min = ss.min(values);
     const topScore = 100;
@@ -100,7 +76,7 @@ module.exports = () => ({
       [1, 0],
       [0, ss.max([diffMaxMin, diffMinMin])]
     );
-    score = score * 100;
+    score = +(score * 100).toFixed(2);
 
     const result = score >= threshold ? true : false;
     return {
