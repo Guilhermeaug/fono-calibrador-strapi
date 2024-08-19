@@ -22,10 +22,15 @@
       "default": 0
     },
     "numberOfAttempts": {
-      "type": "integer"
+      "type": "integer",
+      "default": 1
     },
     "score": {
       "type": "decimal"
+    },
+    "numberOfAudioClicks": {
+      "type": "integer",
+      "default": 0
     }
   }
 }

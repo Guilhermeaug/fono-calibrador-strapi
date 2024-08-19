@@ -1,0 +1,37 @@
+{
+  "kind": "collectionType",
+  "collectionName": "emails_queue",
+  "info": {
+    "singularName": "email-queue",
+    "pluralName": "emails-queue",
+    "displayName": "Fila de Emails",
+    "description": ""
+  },
+  "options": {
+    "draftAndPublish": false
+  },
+  "pluginOptions": {},
+  "attributes": {
+    "scheduledTime": {
+      "type": "datetime",
+      "required": true
+    },
+    "templateReferenceId": {
+      "type": "integer",
+      "required": true
+    },
+    "data": {
+      "type": "json",
+      "required": false
+    },
+    "to": {
+      "type": "string",
+      "required": true
+    },
+    "isStale": {
+      "type": "boolean",
+      "default": false,
+      "required": true
+    }
+  }
+}

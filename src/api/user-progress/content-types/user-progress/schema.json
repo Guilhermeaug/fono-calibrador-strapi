@@ -31,11 +31,18 @@
       "type": "enumeration",
       "enum": [
         "READY",
-        "WAITING_TIME",
-        "DONE"
+        "WAITING",
+        "DONE",
+        "INVALID"
       ],
       "default": "READY",
       "required": true
+    },
+    "nextDueDate": {
+      "type": "datetime"
+    },
+    "timeoutEndDate": {
+      "type": "datetime"
     }
   }
 }

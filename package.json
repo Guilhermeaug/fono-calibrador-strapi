@@ -15,15 +15,21 @@
     "@strapi/plugin-cloud": "4.25.5",
     "@strapi/plugin-i18n": "4.25.5",
     "@strapi/plugin-users-permissions": "4.25.5",
+    "@strapi/provider-email-nodemailer": "^4.25.7",
     "@strapi/strapi": "4.25.5",
+    "axios": "^1.7.4",
     "better-sqlite3": "8.6.0",
+    "dayjs": "^1.11.12",
     "react": "^18.0.0",
     "react-dom": "^18.0.0",
     "react-router-dom": "5.3.4",
     "simple-statistics": "^7.8.3",
+    "strapi-health-plugin": "^1.0.1",
+    "strapi-plugin-email-designer": "^2.2.1",
     "strapi-plugin-multi-select": "^1.2.3",
     "strapi-plugin-populate-deep": "^3.0.1",
-    "styled-components": "5.3.3"
+    "styled-components": "5.3.3",
+    "yup": "^1.4.0"
   },
   "author": {
     "name": "A Strapi developer"

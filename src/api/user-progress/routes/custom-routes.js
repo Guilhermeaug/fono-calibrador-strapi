@@ -12,5 +12,15 @@ module.exports = {
       path: '/users-progress/submit/training',
       handler: 'user-progress.submitTraining',
     },
+    {
+      method: 'POST',
+      path: '/users-progress/terms',
+      handler: 'user-progress.acceptTerms',
+    },
+    {
+      method: 'POST',
+      path: '/users-progress/pac',
+      handler: 'user-progress.acceptPac',
+    },
   ]
 }

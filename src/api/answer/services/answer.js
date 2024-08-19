@@ -57,11 +57,7 @@ function calculate(values, answer) {
 }
 
 module.exports = () => ({
-  computeScore({
-    answer,
-    values,
-    threshold = 100
-  }) {
+  computeScore({ answer, values, threshold = 100 }) {
     const max = ss.max(values);
     const min = ss.min(values);
     const topScore = 100;

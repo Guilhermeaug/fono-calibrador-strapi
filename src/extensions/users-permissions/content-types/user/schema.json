@@ -58,6 +58,13 @@
       "default": false,
       "configurable": false
     },
+    "role": {
+      "type": "relation",
+      "relation": "manyToOne",
+      "target": "plugin::users-permissions.role",
+      "inversedBy": "users",
+      "configurable": false
+    },
     "hasAcceptedTerms": {
       "type": "boolean",
       "default": false,
@@ -68,12 +75,13 @@
       "default": false,
       "required": true
     },
-    "role": {
-      "type": "relation",
-      "relation": "manyToOne",
-      "target": "plugin::users-permissions.role",
-      "inversedBy": "users",
-      "configurable": false
+    "hasCompletedFinalPac": {
+      "type": "boolean",
+      "default": false,
+      "required": true
+    },
+    "pacLink": {
+      "type": "string"
     },
     "additionalData": {
       "type": "relation",

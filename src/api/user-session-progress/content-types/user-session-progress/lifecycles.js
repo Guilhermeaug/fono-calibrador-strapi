@@ -1,94 +1,263 @@
-'use strict'
+"use strict";
 
-module.exports = {
-  // afterCreate(event) {
-  //   // const { result = {} } = event
+const dayjs = require("dayjs");
+const { env } = require("@strapi/utils");
 
-  //   // if ((result?.assessmentStatus === 'WAITING' || result?.assessmentStatus === 'NOT_NEEDED') && result?.trainingRoughnessStatus === 'WAITING' && result?.trainingBreathinessStatus === 'WAITING') {
-  //   //   console.warn("AfterCreate", "Sending Email do User")
-  //   // }
-  // },
+const isTesting = env.bool("IS_TESTING", false);
 
-  async beforeUpdate(event) {
-    const { data, where } = event.params
+async function handleStatusTransition(event) {
+  const { data, where } = event.params;
+  const current = await strapi.entityService.findOne("api::user-session-progress.user-session-progress", where.id);
 
-    const current = await strapi.entityService.findOne("api::user-session-progress.user-session-progress", where.id)
-    const currentTrainingRoughness = current.trainingRoughnessStatus
-    const currentTrainingBreathiness = current.trainingBreathinessStatus
-    const currentAssessment = current.assessmentStatus
-    const nextTrainingRoughness = data.trainingRoughnessStatus || currentTrainingRoughness
-    const nextTrainingBreathiness = data.trainingBreathinessStatus || currentTrainingBreathiness
-    const nextAssessment = data.assessmentStatus || currentAssessment
+  const currentStates = {
+    roughness: current.trainingRoughnessStatus,
+    breathiness: current.trainingBreathinessStatus,
+    assessment: current.assessmentStatus,
+  };
 
-    // If one of the trainingStatus goes to DONE and the other one goes to WAITING
-    // Then, set a 1-day state
-    if (changedFromTo(currentTrainingRoughness, nextTrainingRoughness, isReady, isDone) && isWaiting(nextTrainingBreathiness)) {
-      event.state = '1-day'
-    }
-    if (changedFromTo(currentTrainingBreathiness, nextTrainingBreathiness, isReady, isDone) && isWaiting(nextTrainingRoughness)) {
-      event.state = '1-day'
-    }
+  const nextStates = {
+    roughness: data.trainingRoughnessStatus || currentStates.roughness,
+    breathiness: data.trainingBreathinessStatus || currentStates.breathiness,
+    assessment: data.assessmentStatus || currentStates.assessment,
+  };
 
-    if (isDone(nextTrainingRoughness) && isDone(nextTrainingBreathiness) && isDone(nextAssessment)) {
-      event.state = '7-day'
-    }
-  },
-
-  async afterUpdate(event) {
-    const { result = {} } = event
-    const { data } = event.params
-
-    const userProgress = await strapi.db.query("api::user-progress.user-progress").findOne({
-      fields: [],
-      populate: [{
-        sessions: {
-          fields: ['id']
-        },
-        program: {
-          fields: ['numberOfSessions', 'id']
-        }
-      }],
-      where: {
-        sessions: {
-          $in: [result.id]
-        }
-      }
-    })
-
-    const currentSessionsLength = userProgress.sessions.length
-    const updatedUserProgress = {}
-    if (result?.assessmentStatus === 'DONE' && result?.trainingRoughnessStatus === 'DONE' && result?.trainingBreathinessStatus === 'DONE') {
-      if (userProgress.program.numberOfSessions === currentSessionsLength) {
-        updatedUserProgress.status = 'DONE'
-      } else {
-        const isAssessmentNeeded = (currentSessionsLength + 1) % 3 === 0
-        const newSession = strapi.entityService.create("api::user-session-progress.user-session-progress", {
-          data: {
-            assessmentStatus: isAssessmentNeeded ? 'WAITING' : 'NOT_NEEDED'
-          }
-        })
-        updatedUserProgress.sessions = [...userProgress.sessions, newSession.id]
-      }
-    }
+  if (
+    changedStatus(currentStates.roughness, nextStates.roughness, Status.READY, Status.DONE) &&
+    isStatus(nextStates.breathiness, Status.WAITING)
+  ) {
+    setEventState(event, "1-day-cooldown");
+  } else if (
+    changedStatus(currentStates.breathiness, nextStates.breathiness, Status.READY, Status.DONE) &&
+    isStatus(nextStates.roughness, Status.WAITING)
+  ) {
+    setEventState(event, "1-day-cooldown");
+  } else if (Object.values(nextStates).every((status) => status === Status.DONE || status === Status.NOT_NEEDED)) {
+    setEventState(event, "7-day-cooldown");
   }
 }
 
-function isDone(status) {
-  return status === 'DONE'
+async function handleAfterUpdate(event) {
+  const {
+    result = {},
+  } = event;
+  const userProgress = await findUserProgressBySessionId(result.id);
+
+  if (!userProgress) return;
+
+  const { user, program, sessions } = userProgress;
+  const updatedUserProgress = {};
+
+  const eventName = String(event.state);
+
+  const statuses = {
+    roughness: result.trainingRoughnessStatus,
+    breathiness: result.trainingBreathinessStatus,
+    assessment: result.assessmentStatus,
+  };
+
+  updatedUserProgress.status = Object.values(statuses).includes(Status.INVALID)
+    ? Status.INVALID
+    : Object.values(statuses).includes(Status.READY)
+    ? Status.READY
+    : Status.WAITING;
+
+  switch (eventName) {
+    case "1-day-cooldown":
+      await handleOneDayCooldown({
+        updatedUserProgress,
+        user,
+      });
+      break;
+    case "7-day-cooldown":
+      await handleSevenDayCooldown({
+        updatedUserProgress,
+        user,
+        program,
+        sessions,
+      });
+      break;
+  }
+
+  if (Object.keys(updatedUserProgress).length > 0) {
+    await strapi.entityService.update("api::user-progress.user-progress", userProgress.id, {
+      data: updatedUserProgress,
+    });
+  }
 }
 
-function isReady(status) {
-  return status === 'READY'
+async function handleOneDayCooldown({ updatedUserProgress, user }) {
+  strapi.log.info("AfterUpdate - 1 day cooldown");
+
+  const emailService = strapi.services["api::email.email"];
+
+  const dueDate = isTesting
+    ? getNextTimeout(TIMEOUTS.FIFTEEN_MINUTES).toISOString()
+    : getNextTimeout(TIMEOUTS.ONE_DAY_ROUNDED).toISOString();
+  updatedUserProgress.nextDueDate = dueDate;
+  updatedUserProgress.timeoutEndDate = getNextTimeout(TIMEOUTS.ONE_DAY).toISOString();
+
+  const {
+    email,
+    additionalData: { name },
+  } = user;
+
+  emailService.sendEmailTemplate(email, EmailTemplateReference.ONE_DAY_COOLDOWN, {
+    user: { name },
+    startDate: formatEmailDate(dayjs().add(1, "day")),
+    endDate: formatEmailDate(dayjs().add(2, "day").add(1, "hour")),
+  });
+
+  const reminderDate = isTesting
+    ? getNextTimeout(TIMEOUTS.FIVE_MINUTES).toISOString()
+    : getNextTimeout(TIMEOUTS.ONE_DAY).toISOString();
+
+  await scheduleEmailToQueue({
+    to: email,
+    scheduledTime: reminderDate,
+    templateReferenceId: EmailTemplateReference.REMINDER,
+    templateData: { user: { name } },
+  });
 }
 
-function isWaiting(status) {
-  return status === 'WAITING'
+async function handleSevenDayCooldown({ updatedUserProgress, user, program, sessions }) {
+  strapi.log.info("AfterUpdate - 7 day cooldown");
+
+  const emailService = strapi.services["api::email.email"];
+
+  const { numberOfSessions } = program;
+  const {
+    email,
+    additionalData: { name },
+  } = user;
+  const sessionsLength = sessions.length;
+
+  if (numberOfSessions === sessionsLength) {
+    strapi.log.info("Program Done");
+
+    updatedUserProgress.status = Status.DONE;
+    updatedUserProgress.nextDueDate = null;
+    emailService.sendEmailTemplate(email, EmailTemplateReference.PROGRAM_COMPLETED, {
+      user: { name },
+    });
+
+    return;
+  }
+
+  strapi.log.info("Program Not Done");
+
+  const dueDate = isTesting
+    ? getNextTimeout(TIMEOUTS.THIRTY_MINUTES).toISOString()
+    : getNextTimeout(TIMEOUTS.SEVEN_DAYS_ROUNDED).toISOString();
+  updatedUserProgress.nextDueDate = dueDate;
+  updatedUserProgress.timeoutEndDate = getNextTimeout(TIMEOUTS.SEVEN_DAYS).toISOString();
+
+  const isAssessmentNeeded = (sessionsLength + 1) % 3 === 0;
+  const newSessionAssessmentStatus = isAssessmentNeeded ? Status.WAITING : Status.NOT_NEEDED;
+  const newSession = await strapi.entityService.create("api::user-session-progress.user-session-progress", {
+    data: { assessmentStatus: newSessionAssessmentStatus },
+  });
+  updatedUserProgress.sessions = [...sessions.map((s) => s.id), newSession.id];
+
+  emailService.sendEmailTemplate(email, EmailTemplateReference.SEVEN_DAY_COOLDOWN, {
+    user: { name },
+    startDate: formatEmailDate(dayjs().add(7, "day")),
+    endDate: formatEmailDate(dayjs().add(8, "day").add(1, "hour")),
+  });
+
+  const reminderDate = isTesting
+    ? getNextTimeout(TIMEOUTS.TEN_MINUTES).toISOString()
+    : getNextTimeout(TIMEOUTS.SEVEN_DAYS).toISOString();
+
+  await scheduleEmailToQueue({
+    to: email,
+    scheduledTime: reminderDate,
+    templateReferenceId: EmailTemplateReference.REMINDER,
+    templateData: { user: { name } },
+  });
 }
 
-function isNotNeeded(status) {
-  return status === 'NOT_NEEDED'
+async function scheduleEmailToQueue({ to, scheduledTime, templateReferenceId, templateData }) {
+  return strapi.entityService.create("api::email-queue.email-queue", {
+    data: {
+      to,
+      scheduledTime,
+      templateReferenceId,
+      data: templateData,
+    },
+  });
 }
 
-function changedFromTo(current, next, from, to) {
-  return current === from && next === to
+const Status = {
+  DONE: "DONE",
+  READY: "READY",
+  WAITING: "WAITING",
+  NOT_NEEDED: "NOT_NEEDED",
+  INVALID: "INVALID",
+};
+
+const TIMEOUTS = {
+  ONE_DAY: { days: 1, hours: 0 },
+  ONE_DAY_ROUNDED: { days: 1, hours: 1 },
+  TWO_DAYS: { days: 2, hours: 0 },
+  TWO_DAYS_ROUNDED: { days: 2, hours: 1 },
+  SEVEN_DAYS: { days: 7, hours: 0 },
+  SEVEN_DAYS_ROUNDED: { days: 7, hours: 1 },
+  EIGHT_DAYS: { days: 8, hours: 0 },
+  EIGHT_DAYS_ROUNDED: { days: 8, hours: 1 },
+  // Testing timeouts
+  FIVE_MINUTES: { minutes: 5 },
+  TEN_MINUTES: { minutes: 10 },
+  FIFTEEN_MINUTES: { minutes: 15 },
+  THIRTY_MINUTES: { minutes: 30 },
+};
+
+const EmailTemplateReference = {
+  PROGRAM_COMPLETED: 4,
+  ONE_DAY_COOLDOWN: 2,
+  SEVEN_DAY_COOLDOWN: 3,
+  REMINDER: 5,
+};
+
+const isStatus = (status, expected) => status === expected;
+
+const changedStatus = (current, next, from, to) => current === from && next === to;
+
+function getNextTimeout(timeout) {
+  const { days = 0, hours = 0, minutes = 0 } = timeout;
+  return dayjs().add(days, "day").add(hours, "hour").add(minutes, "minute");
 }
+
+const setEventState = (event, state) => {
+  event.state = state;
+};
+
+function formatEmailDate(date) {
+  return {
+    day: date.format("DD/MM"),
+    hour: date.hour(),
+  };
+}
+async function findUserProgressBySessionId(sessionId) {
+  try {
+    return await strapi.db.query("api::user-progress.user-progress").findOne({
+      populate: {
+        sessions: true,
+        program: true,
+        user: { populate: { additionalData: true } },
+      },
+      where: { sessions: { $in: [sessionId] } },
+    });
+  } catch (error) {
+    console.error("Error fetching user progress in lifycicle hook:", error);
+    return null;
+  }
+}
+
+module.exports = {
+  async beforeUpdate(event) {
+    await handleStatusTransition(event);
+  },
+  async afterUpdate(event) {
+    await handleAfterUpdate(event);
+  },
+};

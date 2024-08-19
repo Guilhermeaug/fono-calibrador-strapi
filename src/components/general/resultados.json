@@ -1,0 +1,20 @@
+{
+  "collectionName": "components_general_resultados",
+  "info": {
+    "displayName": "Resultados"
+  },
+  "options": {},
+  "attributes": {
+    "startDate": {
+      "type": "string"
+    },
+    "endDate": {
+      "type": "string"
+    },
+    "audios": {
+      "type": "component",
+      "repeatable": true,
+      "component": "general.resultado-do-audio"
+    }
+  }
+}

@@ -12,43 +12,62 @@
   },
   "pluginOptions": {},
   "attributes": {
-    "assessmentRoughnessResults": {
-      "type": "component",
-      "repeatable": true,
-      "component": "general.resultado-do-audio"
-    },
-    "assessmentBreathinessResults": {
-      "type": "component",
-      "repeatable": true,
-      "component": "general.resultado-do-audio"
-    },
-    "trainingRoughnessResults": {
-      "type": "component",
-      "repeatable": true,
-      "component": "general.resultado-do-audio"
-    },
-    "trainingBreathinessResults": {
-      "type": "component",
-      "repeatable": true,
-      "component": "general.resultado-do-audio"
-    },
     "assessmentStatus": {
       "type": "enumeration",
-      "enum": ["NOT_NEEDED", "WAITING", "READY", "DONE"],
+      "enum": [
+        "NOT_NEEDED",
+        "WAITING",
+        "READY",
+        "DONE",
+        "INVALID"
+      ],
       "default": "NOT_NEEDED",
       "required": true
     },
     "trainingRoughnessStatus": {
       "type": "enumeration",
-      "enum": ["NOT_NEEDED", "WAITING", "READY", "DONE"],
+      "enum": [
+        "NOT_NEEDED",
+        "WAITING",
+        "READY",
+        "DONE",
+        "INVALID"
+      ],
       "required": true,
       "default": "WAITING"
     },
     "trainingBreathinessStatus": {
       "type": "enumeration",
-      "enum": ["NOT_NEEDED", "WAITING", "READY", "DONE"],
+      "enum": [
+        "NOT_NEEDED",
+        "WAITING",
+        "READY",
+        "DONE",
+        "INVALID"
+      ],
       "default": "WAITING",
       "required": true
+    },
+    "assessmentRoughnessResults": {
+      "displayName": "Resultados",
+      "type": "component",
+      "repeatable": false,
+      "component": "general.resultados"
+    },
+    "assessmentBreathinessResults": {
+      "type": "component",
+      "repeatable": false,
+      "component": "general.resultados"
+    },
+    "trainingRoughnessResults": {
+      "type": "component",
+      "repeatable": false,
+      "component": "general.resultados"
+    },
+    "trainingBreathinessResults": {
+      "type": "component",
+      "repeatable": false,
+      "component": "general.resultados"
     }
   }
 }
