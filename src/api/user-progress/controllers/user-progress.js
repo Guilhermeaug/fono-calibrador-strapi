@@ -5,6 +5,7 @@
  */
 const { createCoreController } = require("@strapi/strapi").factories;
 const yup = require("yup");
+const dayjs = require("dayjs");
 
 module.exports = createCoreController("api::user-progress.user-progress", ({ strapi }) => ({
   answerService: strapi.services["api::answer.answer"],
@@ -284,22 +285,120 @@ module.exports = createCoreController("api::user-progress.user-progress", ({ str
       },
     });
 
-    const userSessionProgress = await strapi.entityService.create("api::user-session-progress.user-session-progress", {
-      data: {
-        assessmentStatus: "READY",
-      },
-    });
-    await strapi.entityService.create("api::user-progress.user-progress", {
-      data: {
-        user: userId,
-        program: 1,
-        sessions: [userSessionProgress.id],
-      },
-    });
-
     ctx.body = {
       message: "Pac accepted successfully",
     };
+  },
+
+  async alignProgress(ctx) {
+    const schema = yup.object().shape({
+      userId: yup.number().required(),
+      programId: yup.number().required(),
+    });
+
+    try {
+      await schema.validate(ctx.request.body);
+    } catch (error) {
+      ctx.status = 400;
+      ctx.body = {
+        error: error.message,
+      };
+      return;
+    }
+
+    const { userId, programId } = ctx.request.body;
+
+    const userProgress = await strapi.db.query("api::user-progress.user-progress").findOne({
+      where: {
+        program: programId,
+        user: userId,
+      },
+      populate: ["sessions"],
+    });
+    const { id, status, nextDueDate, timeoutEndDate, sessions } = userProgress;
+    const lastSession = sessions[sessions.length - 1];
+
+    const now = dayjs();
+    const dueDate = nextDueDate ? dayjs(nextDueDate) : null;
+    const timeoutEnd = timeoutEndDate ? dayjs(timeoutEndDate) : null;
+
+    const updateUserProgress = async (id, payload) => {
+      await strapi.entityService.update("api::user-progress.user-progress", id, {
+        data: payload,
+      });
+    };
+    const updateUserSessionProgress = async (id, payload) => {
+      await strapi.entityService.update("api::user-session-progress.user-session-progress", id, {
+        data: payload,
+      });
+    };
+
+    const Status = {
+      WAITING: "WAITING",
+      READY: "READY",
+      INVALID: "INVALID",
+      DONE: "DONE",
+      NOT_NEEDED: "NOT_NEEDED",
+    };
+    const statuses = {
+      trainingRoughnessStatus: lastSession.trainingRoughnessStatus,
+      trainingBreathinessStatus: lastSession.trainingBreathinessStatus,
+      assessmentStatus: lastSession.assessmentStatus,
+    };
+
+    switch (status) {
+      case "WAITING":
+        if (timeoutEnd && now.isAfter(timeoutEnd)) {
+          userProgress.status = "READY";
+          if (statuses.assessmentStatus === Status.DONE || statuses.assessmentStatus === Status.NOT_NEEDED) {
+            statuses.trainingRoughnessStatus = statuses.trainingRoughnessStatus !== "DONE" ? Status.READY : Status.DONE;
+            statuses.trainingBreathinessStatus = statuses.trainingBreathinessStatus !== "DONE" ? Status.READY : Status.DONE;
+          } else {
+            statuses.assessmentStatus = Status.READY;
+          }
+          userProgress.sessions[userProgress.sessions.length - 1] = {
+            ...lastSession,
+            trainingRoughnessStatus: statuses.trainingRoughnessStatus,
+            trainingBreathinessStatus: statuses.trainingBreathinessStatus,
+            assessmentStatus: statuses.assessmentStatus,
+          };
+          await Promise.all([
+            updateUserSessionProgress(lastSession.id, {
+              trainingRoughnessStatus: statuses.trainingRoughnessStatus,
+              trainingBreathinessStatus: statuses.trainingBreathinessStatus,
+              assessmentStatus: statuses.assessmentStatus,
+            }),
+            updateUserProgress(id, { status: "READY", timeoutEndDate: null }),
+          ]);
+        } else if (dueDate && now.isAfter(dueDate)) {
+          userProgress.status = "INVALID";
+          const waitingStatuses = Object.entries(statuses).filter(([_, status]) => status === "WAITING");
+          for (const [feature, _] of waitingStatuses) {
+            statuses[feature] = Status.INVALID;
+          }
+          await Promise.all([
+            updateUserSessionProgress(lastSession.id, statuses),
+            updateUserProgress(id, { status: "INVALID", nextDueDate: null }),
+          ]);
+        }
+        break;
+      case "READY":
+        if (dueDate && now.isAfter(dueDate)) {
+          userProgress.status = "INVALID";
+          const waitingStatuses = Object.entries(statuses).filter(([_, status]) => status === "READY");
+          for (const [feature, _] of waitingStatuses) {
+            statuses[feature] = Status.INVALID;
+          }
+          await Promise.all([
+            updateUserSessionProgress(lastSession.id, statuses),
+            updateUserProgress(id, { status: "INVALID", nextDueDate: null }),
+          ]);
+        }
+        break;
+    }
+
+    ctx.body = userProgress;
+    ctx.status = 200;
   },
 }));
 

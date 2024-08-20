@@ -37,9 +37,7 @@ async function handleStatusTransition(event) {
 }
 
 async function handleAfterUpdate(event) {
-  const {
-    result = {},
-  } = event;
+  const { result = {} } = event;
   const userProgress = await findUserProgressBySessionId(result.id);
 
   if (!userProgress) return;
@@ -91,10 +89,14 @@ async function handleOneDayCooldown({ updatedUserProgress, user }) {
   const emailService = strapi.services["api::email.email"];
 
   const dueDate = isTesting
-    ? getNextTimeout(TIMEOUTS.FIFTEEN_MINUTES).toISOString()
+    ? getNextTimeout(TIMEOUTS.THIRTY_MINUTES).toISOString()
     : getNextTimeout(TIMEOUTS.ONE_DAY_ROUNDED).toISOString();
+  const reminderDate = isTesting
+    ? getNextTimeout(TIMEOUTS.FIVE_MINUTES).toISOString()
+    : getNextTimeout(TIMEOUTS.ONE_DAY).toISOString();
+
   updatedUserProgress.nextDueDate = dueDate;
-  updatedUserProgress.timeoutEndDate = getNextTimeout(TIMEOUTS.ONE_DAY).toISOString();
+  updatedUserProgress.timeoutEndDate = reminderDate;
 
   const {
     email,
@@ -106,10 +108,6 @@ async function handleOneDayCooldown({ updatedUserProgress, user }) {
     startDate: formatEmailDate(dayjs().add(1, "day")),
     endDate: formatEmailDate(dayjs().add(2, "day").add(1, "hour")),
   });
-
-  const reminderDate = isTesting
-    ? getNextTimeout(TIMEOUTS.FIVE_MINUTES).toISOString()
-    : getNextTimeout(TIMEOUTS.ONE_DAY).toISOString();
 
   await scheduleEmailToQueue({
     to: email,
@@ -136,6 +134,7 @@ async function handleSevenDayCooldown({ updatedUserProgress, user, program, sess
 
     updatedUserProgress.status = Status.DONE;
     updatedUserProgress.nextDueDate = null;
+    updatedUserProgress.timeoutEndDate = null;
     emailService.sendEmailTemplate(email, EmailTemplateReference.PROGRAM_COMPLETED, {
       user: { name },
     });
@@ -143,13 +142,17 @@ async function handleSevenDayCooldown({ updatedUserProgress, user, program, sess
     return;
   }
 
-  strapi.log.info("Program Not Done");
+  strapi.log.info("Program Continues");
 
   const dueDate = isTesting
     ? getNextTimeout(TIMEOUTS.THIRTY_MINUTES).toISOString()
     : getNextTimeout(TIMEOUTS.SEVEN_DAYS_ROUNDED).toISOString();
+  const reminderDate = isTesting
+    ? getNextTimeout(TIMEOUTS.TEN_MINUTES).toISOString()
+    : getNextTimeout(TIMEOUTS.SEVEN_DAYS).toISOString();
+
   updatedUserProgress.nextDueDate = dueDate;
-  updatedUserProgress.timeoutEndDate = getNextTimeout(TIMEOUTS.SEVEN_DAYS).toISOString();
+  updatedUserProgress.timeoutEndDate = reminderDate;
 
   const isAssessmentNeeded = (sessionsLength + 1) % 3 === 0;
   const newSessionAssessmentStatus = isAssessmentNeeded ? Status.WAITING : Status.NOT_NEEDED;
@@ -163,10 +166,6 @@ async function handleSevenDayCooldown({ updatedUserProgress, user, program, sess
     startDate: formatEmailDate(dayjs().add(7, "day")),
     endDate: formatEmailDate(dayjs().add(8, "day").add(1, "hour")),
   });
-
-  const reminderDate = isTesting
-    ? getNextTimeout(TIMEOUTS.TEN_MINUTES).toISOString()
-    : getNextTimeout(TIMEOUTS.SEVEN_DAYS).toISOString();
 
   await scheduleEmailToQueue({
     to: email,
@@ -224,7 +223,8 @@ const changedStatus = (current, next, from, to) => current === from && next === 
 
 function getNextTimeout(timeout) {
   const { days = 0, hours = 0, minutes = 0 } = timeout;
-  return dayjs().add(days, "day").add(hours, "hour").add(minutes, "minute");
+  const date = dayjs().add(days, "day").add(hours, "hour").add(minutes, "minute");
+  return isTesting ? date : date.startOf("hour");
 }
 
 const setEventState = (event, state) => {
