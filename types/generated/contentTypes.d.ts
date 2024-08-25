@@ -554,14 +554,17 @@ export interface PluginUsersPermissionsUser extends Schema.CollectionType {
     blocked: Attribute.Boolean & Attribute.DefaultTo<false>;
     role: Attribute.Relation<"plugin::users-permissions.user", "manyToOne", "plugin::users-permissions.role">;
     hasAcceptedTerms: Attribute.Boolean & Attribute.Required & Attribute.DefaultTo<false>;
-    hasCompletedPac: Attribute.Boolean & Attribute.Required & Attribute.DefaultTo<false>;
-    hasCompletedFinalPac: Attribute.Boolean & Attribute.Required & Attribute.DefaultTo<false>;
     pacLink: Attribute.String;
+    firstPacStatus: Attribute.Enumeration<["READY", "DONE", "WAITING", "INVALID", "UNAVAILABLE"]> &
+      Attribute.DefaultTo<"READY">;
+    finalPacStatus: Attribute.Enumeration<["READY", "DONE", "WAITING", "INVALID", "UNAVAILABLE"]> &
+      Attribute.DefaultTo<"UNAVAILABLE">;
     additionalData: Attribute.Relation<
       "plugin::users-permissions.user",
       "oneToOne",
       "api::additional-data.additional-data"
     >;
+    name: Attribute.String;
     createdAt: Attribute.DateTime;
     updatedAt: Attribute.DateTime;
     createdBy: Attribute.Relation<"plugin::users-permissions.user", "oneToOne", "admin::user"> & Attribute.Private;
@@ -713,6 +716,28 @@ export interface ApiEmailQueueEmailQueue extends Schema.CollectionType {
   };
 }
 
+export interface ApiGroupGroup extends Schema.CollectionType {
+  collectionName: "groups";
+  info: {
+    singularName: "group";
+    pluralName: "groups";
+    displayName: "Turma";
+    description: "";
+  };
+  options: {
+    draftAndPublish: false;
+  };
+  attributes: {
+    program: Attribute.Relation<"api::group.group", "oneToOne", "api::program.program">;
+    students: Attribute.Relation<"api::group.group", "oneToMany", "plugin::users-permissions.user">;
+    teacher: Attribute.Relation<"api::group.group", "oneToOne", "plugin::users-permissions.user">;
+    createdAt: Attribute.DateTime;
+    updatedAt: Attribute.DateTime;
+    createdBy: Attribute.Relation<"api::group.group", "oneToOne", "admin::user"> & Attribute.Private;
+    updatedBy: Attribute.Relation<"api::group.group", "oneToOne", "admin::user"> & Attribute.Private;
+  };
+}
+
 export interface ApiProgramProgram extends Schema.CollectionType {
   collectionName: "programs";
   info: {
@@ -840,6 +865,7 @@ declare module "@strapi/types" {
       "plugin::email-designer.email-template": PluginEmailDesignerEmailTemplate;
       "api::additional-data.additional-data": ApiAdditionalDataAdditionalData;
       "api::email-queue.email-queue": ApiEmailQueueEmailQueue;
+      "api::group.group": ApiGroupGroup;
       "api::program.program": ApiProgramProgram;
       "api::user-progress.user-progress": ApiUserProgressUserProgress;
       "api::user-session-progress.user-session-progress": ApiUserSessionProgressUserSessionProgress;

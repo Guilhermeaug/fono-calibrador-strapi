@@ -26,7 +26,7 @@ module.exports = {
           await emailService.sendEmailTemplate(to, templateReferenceId, data);
           await strapi.entityService.update("api::email-queue.email-queue", email.id, {
             data: { isStale: true },
-          });
+          });  
         })
       );
     },

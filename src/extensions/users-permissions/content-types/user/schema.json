@@ -70,23 +70,38 @@
       "default": false,
       "required": true
     },
-    "hasCompletedPac": {
-      "type": "boolean",
-      "default": false,
-      "required": true
-    },
-    "hasCompletedFinalPac": {
-      "type": "boolean",
-      "default": false,
-      "required": true
-    },
     "pacLink": {
       "type": "string"
+    },
+    "firstPacStatus": {
+      "type": "enumeration",
+      "enum": [
+        "READY",
+        "DONE",
+        "WAITING",
+        "INVALID",
+        "UNAVAILABLE"
+      ],
+      "default": "READY"
+    },
+    "finalPacStatus": {
+      "type": "enumeration",
+      "enum": [
+        "READY",
+        "DONE",
+        "WAITING",
+        "INVALID",
+        "UNAVAILABLE"
+      ],
+      "default": "UNAVAILABLE"
     },
     "additionalData": {
       "type": "relation",
       "relation": "oneToOne",
       "target": "api::additional-data.additional-data"
+    },
+    "name": {
+      "type": "string"
     }
   }
 }
