@@ -281,7 +281,7 @@ module.exports = createCoreController("api::user-progress.user-progress", ({ str
 
     await strapi.entityService.update("plugin::users-permissions.user", userId, {
       data: {
-        hasCompletedPac: true,
+        firstPacStatus: 'DONE',
       },
     });
 
