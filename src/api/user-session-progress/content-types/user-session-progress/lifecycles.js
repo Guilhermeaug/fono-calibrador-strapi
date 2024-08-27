@@ -89,10 +89,10 @@ async function handleOneDayCooldown({ updatedUserProgress, user }) {
   const emailService = strapi.services["api::email.email"];
 
   const dueDate = isTesting
-    ? getNextTimeout(TIMEOUTS.THIRTY_MINUTES).toISOString()
+    ? getNextTimeout(TIMEOUTS.TEN_MINUTES).toISOString()
     : getNextTimeout(TIMEOUTS.ONE_DAY_ROUNDED).toISOString();
   const reminderDate = isTesting
-    ? getNextTimeout(TIMEOUTS.FIVE_MINUTES).toISOString()
+    ? getNextTimeout(TIMEOUTS.ONE_MINUTE).toISOString()
     : getNextTimeout(TIMEOUTS.ONE_DAY).toISOString();
 
   updatedUserProgress.nextDueDate = dueDate;
@@ -145,10 +145,10 @@ async function handleSevenDayCooldown({ updatedUserProgress, user, program, sess
   strapi.log.info("Program Continues");
 
   const dueDate = isTesting
-    ? getNextTimeout(TIMEOUTS.THIRTY_MINUTES).toISOString()
+    ? getNextTimeout(TIMEOUTS.TEN_MINUTES).toISOString()
     : getNextTimeout(TIMEOUTS.SEVEN_DAYS_ROUNDED).toISOString();
   const reminderDate = isTesting
-    ? getNextTimeout(TIMEOUTS.TEN_MINUTES).toISOString()
+    ? getNextTimeout(TIMEOUTS.ONE_MINUTE).toISOString()
     : getNextTimeout(TIMEOUTS.SEVEN_DAYS).toISOString();
 
   updatedUserProgress.nextDueDate = dueDate;
@@ -204,6 +204,7 @@ const TIMEOUTS = {
   EIGHT_DAYS: { days: 8, hours: 0 },
   EIGHT_DAYS_ROUNDED: { days: 8, hours: 1 },
   // Testing timeouts
+  ONE_MINUTE: { minutes: 1 },
   FIVE_MINUTES: { minutes: 5 },
   TEN_MINUTES: { minutes: 10 },
   FIFTEEN_MINUTES: { minutes: 15 },
