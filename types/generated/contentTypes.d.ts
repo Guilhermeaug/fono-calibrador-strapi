@@ -731,6 +731,7 @@ export interface ApiGroupGroup extends Schema.CollectionType {
     program: Attribute.Relation<"api::group.group", "oneToOne", "api::program.program">;
     students: Attribute.Relation<"api::group.group", "oneToMany", "plugin::users-permissions.user">;
     teacher: Attribute.Relation<"api::group.group", "oneToOne", "plugin::users-permissions.user">;
+    name: Attribute.String & Attribute.Required & Attribute.DefaultTo<"Sem nome">;
     createdAt: Attribute.DateTime;
     updatedAt: Attribute.DateTime;
     createdBy: Attribute.Relation<"api::group.group", "oneToOne", "admin::user"> & Attribute.Private;

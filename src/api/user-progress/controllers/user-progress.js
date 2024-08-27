@@ -234,62 +234,6 @@ module.exports = createCoreController("api::user-progress.user-progress", ({ str
     ctx.body = res;
   },
 
-  async acceptTerms(ctx) {
-    const schema = yup.object().shape({
-      userId: yup.number().required(),
-    });
-
-    try {
-      await schema.validate(ctx.request.body);
-    } catch (error) {
-      ctx.status = 400;
-      ctx.body = {
-        error: error.message,
-      };
-      return;
-    }
-
-    const { userId } = ctx.request.body;
-
-    await strapi.entityService.update("plugin::users-permissions.user", userId, {
-      data: {
-        hasAcceptedTerms: true,
-      },
-    });
-
-    ctx.body = {
-      message: "Terms accepted successfully",
-    };
-  },
-
-  async acceptPac(ctx) {
-    const schema = yup.object().shape({
-      userId: yup.number().required(),
-    });
-
-    try {
-      await schema.validate(ctx.request.body);
-    } catch (error) {
-      ctx.status = 400;
-      ctx.body = {
-        error: error.message,
-      };
-      return;
-    }
-
-    const { userId } = ctx.request.body;
-
-    await strapi.entityService.update("plugin::users-permissions.user", userId, {
-      data: {
-        firstPacStatus: 'DONE',
-      },
-    });
-
-    ctx.body = {
-      message: "Pac accepted successfully",
-    };
-  },
-
   async alignProgress(ctx) {
     const schema = yup.object().shape({
       userId: yup.number().required(),
@@ -399,7 +343,7 @@ module.exports = createCoreController("api::user-progress.user-progress", ({ str
 
     ctx.body = userProgress;
     ctx.status = 200;
-  },
+  },  
 }));
 
 function features(feature) {

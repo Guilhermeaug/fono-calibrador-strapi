@@ -26,6 +26,11 @@
       "type": "relation",
       "relation": "oneToOne",
       "target": "plugin::users-permissions.user"
+    },
+    "name": {
+      "type": "string",
+      "required": true,
+      "default": "Sem nome"
     }
   }
 }

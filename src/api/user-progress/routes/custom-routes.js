@@ -14,16 +14,6 @@ module.exports = {
     },
     {
       method: 'POST',
-      path: '/users-progress/terms',
-      handler: 'user-progress.acceptTerms',
-    },
-    {
-      method: 'POST',
-      path: '/users-progress/pac',
-      handler: 'user-progress.acceptPac',
-    },
-    {
-      method: 'POST',
       path: '/users-progress/alignProgress',
       handler: 'user-progress.alignProgress',
     },
