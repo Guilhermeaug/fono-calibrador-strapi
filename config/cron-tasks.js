@@ -31,7 +31,7 @@ module.exports = {
       );
     },
     options: {
-      rule: "*/1 * * * *",
+      rule: "*/5 * * * *",
       // rule: "1 * * * *",
     },
   },
