@@ -135,6 +135,11 @@ async function handleSevenDayCooldown({ updatedUserProgress, user, program, sess
     updatedUserProgress.status = Status.DONE;
     updatedUserProgress.nextDueDate = null;
     updatedUserProgress.timeoutEndDate = null;
+    await strapi.entityService.update("plugin::users-permissions.user", user.id, {
+      data: {
+        finalPacStatus: "READY",
+      }
+    })
     emailService.sendEmailTemplate(email, EmailTemplateReference.PROGRAM_COMPLETED, {
       user: { name },
     });
