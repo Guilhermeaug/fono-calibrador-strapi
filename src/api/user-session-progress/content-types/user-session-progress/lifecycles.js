@@ -90,7 +90,7 @@ async function handleOneDayCooldown({ updatedUserProgress, user }) {
 
   const dueDate = isTesting
     ? getNextTimeout(TIMEOUTS.TEN_MINUTES).toISOString()
-    : getNextTimeout(TIMEOUTS.ONE_DAY_ROUNDED).toISOString();
+    : getNextTimeout(TIMEOUTS.TWO_DAYS_ROUNDED).toISOString();
   const reminderDate = isTesting
     ? getNextTimeout(TIMEOUTS.ONE_MINUTE).toISOString()
     : getNextTimeout(TIMEOUTS.ONE_DAY).toISOString();
@@ -151,7 +151,7 @@ async function handleSevenDayCooldown({ updatedUserProgress, user, program, sess
 
   const dueDate = isTesting
     ? getNextTimeout(TIMEOUTS.TEN_MINUTES).toISOString()
-    : getNextTimeout(TIMEOUTS.SEVEN_DAYS_ROUNDED).toISOString();
+    : getNextTimeout(TIMEOUTS.EIGHT_DAYS_ROUNDED).toISOString();
   const reminderDate = isTesting
     ? getNextTimeout(TIMEOUTS.ONE_MINUTE).toISOString()
     : getNextTimeout(TIMEOUTS.SEVEN_DAYS).toISOString();

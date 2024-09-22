@@ -1,4 +1,7 @@
 const dayjs = require("dayjs");
+const { env } = require("@strapi/utils");
+
+const isTesting = env.bool("IS_TESTING", false);
 
 module.exports = {
   emailQueue: {
@@ -26,13 +29,12 @@ module.exports = {
           await emailService.sendEmailTemplate(to, templateReferenceId, data);
           await strapi.entityService.update("api::email-queue.email-queue", email.id, {
             data: { isStale: true },
-          });  
+          });
         })
       );
     },
     options: {
-      rule: "*/5 * * * *",
-      // rule: "1 * * * *",
+      rule: isTesting ? "*/1 * * * *" : "0 * * * *",
     },
   },
 };

@@ -77,6 +77,12 @@
     },
     "hearing": {
       "type": "string"
+    },
+    "laterality": {
+      "type": "string"
+    },
+    "learningComplaints": {
+      "type": "boolean"
     }
   }
 }

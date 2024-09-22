@@ -48,6 +48,8 @@ module.exports = {
     const emailService = strapi.services["api::email.email"];
     await emailService.sendEmailTemplate(to, templateReferenceId, data);
 
+    strapi.log.info(`Email sent to ${to} with template ${templateReferenceId}`);
+
     return ctx.send({ message: "Email sent" });
   },
 };

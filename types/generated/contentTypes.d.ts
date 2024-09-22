@@ -683,6 +683,8 @@ export interface ApiAdditionalDataAdditionalData extends Schema.CollectionType {
     hasResearchExperience: Attribute.Boolean;
     hasAcademicArticle: Attribute.Boolean;
     hearing: Attribute.String;
+    laterality: Attribute.String;
+    learningComplaints: Attribute.Boolean;
     createdAt: Attribute.DateTime;
     updatedAt: Attribute.DateTime;
     createdBy: Attribute.Relation<"api::additional-data.additional-data", "oneToOne", "admin::user"> &
