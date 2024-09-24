@@ -685,6 +685,7 @@ export interface ApiAdditionalDataAdditionalData extends Schema.CollectionType {
     hearing: Attribute.String;
     laterality: Attribute.String;
     learningComplaints: Attribute.Boolean;
+    phone: Attribute.String;
     createdAt: Attribute.DateTime;
     updatedAt: Attribute.DateTime;
     createdBy: Attribute.Relation<"api::additional-data.additional-data", "oneToOne", "admin::user"> &

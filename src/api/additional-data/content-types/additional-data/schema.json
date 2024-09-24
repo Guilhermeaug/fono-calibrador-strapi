@@ -83,6 +83,9 @@
     },
     "learningComplaints": {
       "type": "boolean"
+    },
+    "phone": {
+      "type": "string"
     }
   }
 }
