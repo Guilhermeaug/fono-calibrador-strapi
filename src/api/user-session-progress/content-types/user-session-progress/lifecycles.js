@@ -89,7 +89,7 @@ async function handleOneDayCooldown({ updatedUserProgress, user }) {
   const emailService = strapi.services["api::email.email"];
 
   const dueDate = isTesting
-    ? getNextTimeout(TIMEOUTS.TEN_MINUTES).toISOString()
+    ? getNextTimeout(TIMEOUTS.THIRTY_MINUTES).toISOString()
     : getNextTimeout(TIMEOUTS.TWO_DAYS_ROUNDED).toISOString();
   const reminderDate = isTesting
     ? getNextTimeout(TIMEOUTS.ONE_MINUTE).toISOString()
@@ -150,7 +150,7 @@ async function handleSevenDayCooldown({ updatedUserProgress, user, program, sess
   strapi.log.info("Program Continues");
 
   const dueDate = isTesting
-    ? getNextTimeout(TIMEOUTS.TEN_MINUTES).toISOString()
+    ? getNextTimeout(TIMEOUTS.THIRTY_MINUTES).toISOString()
     : getNextTimeout(TIMEOUTS.EIGHT_DAYS_ROUNDED).toISOString();
   const reminderDate = isTesting
     ? getNextTimeout(TIMEOUTS.ONE_MINUTE).toISOString()
