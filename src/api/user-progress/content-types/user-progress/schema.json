@@ -17,11 +17,6 @@
       "relation": "oneToOne",
       "target": "api::program.program"
     },
-    "user": {
-      "type": "relation",
-      "relation": "oneToOne",
-      "target": "plugin::users-permissions.user"
-    },
     "sessions": {
       "type": "relation",
       "relation": "oneToMany",
@@ -43,6 +38,15 @@
     },
     "timeoutEndDate": {
       "type": "datetime"
+    },
+    "user": {
+      "type": "relation",
+      "relation": "oneToOne",
+      "target": "plugin::users-permissions.user",
+      "mappedBy": "userProgress"
+    },
+    "favoriteFeature": {
+      "type": "string"
     }
   }
 }

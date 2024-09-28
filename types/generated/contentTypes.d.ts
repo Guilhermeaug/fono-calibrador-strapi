@@ -565,6 +565,7 @@ export interface PluginUsersPermissionsUser extends Schema.CollectionType {
       "api::additional-data.additional-data"
     >;
     name: Attribute.String;
+    userProgress: Attribute.Relation<"plugin::users-permissions.user", "oneToOne", "api::user-progress.user-progress">;
     createdAt: Attribute.DateTime;
     updatedAt: Attribute.DateTime;
     createdBy: Attribute.Relation<"plugin::users-permissions.user", "oneToOne", "admin::user"> & Attribute.Private;
@@ -796,7 +797,6 @@ export interface ApiUserProgressUserProgress extends Schema.CollectionType {
   };
   attributes: {
     program: Attribute.Relation<"api::user-progress.user-progress", "oneToOne", "api::program.program">;
-    user: Attribute.Relation<"api::user-progress.user-progress", "oneToOne", "plugin::users-permissions.user">;
     sessions: Attribute.Relation<
       "api::user-progress.user-progress",
       "oneToMany",
@@ -807,6 +807,8 @@ export interface ApiUserProgressUserProgress extends Schema.CollectionType {
       Attribute.DefaultTo<"READY">;
     nextDueDate: Attribute.DateTime;
     timeoutEndDate: Attribute.DateTime;
+    user: Attribute.Relation<"api::user-progress.user-progress", "oneToOne", "plugin::users-permissions.user">;
+    favoriteFeature: Attribute.String;
     createdAt: Attribute.DateTime;
     updatedAt: Attribute.DateTime;
     createdBy: Attribute.Relation<"api::user-progress.user-progress", "oneToOne", "admin::user"> & Attribute.Private;

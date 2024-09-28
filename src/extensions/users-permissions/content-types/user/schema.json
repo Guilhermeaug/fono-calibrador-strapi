@@ -102,6 +102,12 @@
     },
     "name": {
       "type": "string"
+    },
+    "userProgress": {
+      "type": "relation",
+      "relation": "oneToOne",
+      "target": "api::user-progress.user-progress",
+      "inversedBy": "user"
     }
   }
 }

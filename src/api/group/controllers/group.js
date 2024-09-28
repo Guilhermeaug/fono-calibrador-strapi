@@ -19,7 +19,7 @@ module.exports = createCoreController("api::group.group", ({ strapi }) => ({
   async findOne(ctx) {
     const user = ctx.state.user;
     const entryId = ctx.params.id;
-    let entry = {};
+    let entry = null;
 
     if (entryId) {
       entry = await strapi.entityService.findOne("api::group.group", entryId, {
