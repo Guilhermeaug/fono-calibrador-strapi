@@ -7,9 +7,6 @@ module.exports = (plugin) => {
     const { email, username, password, ...body } = ctx.request.body;
     const { id: userId } = ctx.response._body.user;
 
-    const mainGroup = await strapi.entityService.findOne("api::group.group", 1, {
-      populate: ["students"],
-    });
     const [additionalData, userSessionProgress] = await Promise.all([
       strapi.entityService.create("api::additional-data.additional-data", {
         data: {
@@ -37,7 +34,9 @@ module.exports = (plugin) => {
       }),
       strapi.entityService.update("api::group.group", 1, {
         data: {
-          students: [...(mainGroup.students.map((s) => s.id) ?? []), userId],
+          students: {
+            connect: [userId],
+          },
         },
       }),
     ]);
