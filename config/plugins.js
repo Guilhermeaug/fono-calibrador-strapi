@@ -5,7 +5,7 @@ module.exports = ({ env }) => ({
         allowedFields: ["hasAcceptedTerms", "firstPacStatus", "finalPacStatus", "additionalData", "pacLink", "name"],
       },
       jwt: {
-        expiresIn: "60 days",
+        expiresIn: "90 days",
       },
     },
   },
