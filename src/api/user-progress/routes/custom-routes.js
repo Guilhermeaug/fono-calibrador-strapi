@@ -17,5 +17,10 @@ module.exports = {
       path: '/users-progress/alignProgress',
       handler: 'user-progress.alignProgress',
     },
+    {
+      method: 'POST',
+      path: '/users-progress/restartSessions',
+      handler: 'user-progress.restartSessions',
+    },
   ]
 }
