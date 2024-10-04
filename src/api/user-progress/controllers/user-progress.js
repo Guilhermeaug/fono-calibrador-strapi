@@ -270,6 +270,12 @@ module.exports = createCoreController("api::user-progress.user-progress", ({ str
     const lastSessionIndex = userProgress.sessions.length - 1;
     const lastSession = userProgress.sessions[lastSessionIndex];
 
+    if (userProgress.status === Status.INVALID) {
+      ctx.status = 200
+      ctx.body = userProgress;
+      return;
+    }
+
     const now = dayjs();
     const dueDate = userProgress.nextDueDate ? dayjs(userProgress.nextDueDate) : null;
     const timeoutEnd = userProgress.timeoutEndDate ? dayjs(userProgress.timeoutEndDate) : null;
