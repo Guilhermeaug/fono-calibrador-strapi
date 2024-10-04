@@ -282,19 +282,12 @@ module.exports = createCoreController("api::user-progress.user-progress", ({ str
       case Status.WAITING:
         // If the timeout has ended
         if (timeoutEnd && now.isAfter(timeoutEnd)) {
-          userProgress.status = "READY";
           if (assessmentIsOver) {
-            userProgress.trainingRoughnessStatus = updateStatus(lastSession.trainingRoughnessStatus, Status.READY);
-            userProgress.trainingBreathinessStatus = updateStatus(lastSession.trainingBreathinessStatus, Status.READY);
+            lastSession.trainingRoughnessStatus = updateStatus(lastSession.trainingRoughnessStatus, Status.READY);
+            lastSession.trainingBreathinessStatus = updateStatus(lastSession.trainingBreathinessStatus, Status.READY);
           } else {
-            userProgress.assessmentStatus = updateStatus(lastSession.assessmentStatus, Status.READY);
+            lastSession.assessmentStatus = updateStatus(lastSession.assessmentStatus, Status.READY);
           }
-          userProgress.sessions[lastSessionIndex] = {
-            ...lastSession,
-            trainingRoughnessStatus: lastSession.trainingRoughnessStatus,
-            trainingBreathinessStatus: lastSession.trainingBreathinessStatus,
-            assessmentStatus: lastSession.assessmentStatus,
-          };
           userProgress.status = Status.READY;
           userProgress.timeoutEndDate = null;
         }
