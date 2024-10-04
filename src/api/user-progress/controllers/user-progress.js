@@ -271,7 +271,7 @@ module.exports = createCoreController("api::user-progress.user-progress", ({ str
     const lastSession = userProgress.sessions[lastSessionIndex];
 
     if (userProgress.status === Status.INVALID) {
-      ctx.status = 200
+      ctx.status = 200;
       ctx.body = userProgress;
       return;
     }
@@ -286,32 +286,32 @@ module.exports = createCoreController("api::user-progress.user-progress", ({ str
 
     switch (userProgress.status) {
       case Status.WAITING:
-        // If the due date has passed
-        if (dueDate && now.isAfter(dueDate)) {
-          userProgress.status = Status.INVALID;
-          userProgress.nextDueDate = null;
-        }
-        // If the timeout has ended
-        else if (timeoutEnd && now.isAfter(timeoutEnd)) {
+        // If the timeout date has passed
+        if (timeoutEnd && now.isAfter(timeoutEnd)) {
           if (assessmentIsOver) {
             lastSession.trainingRoughnessStatus = updateStatus(lastSession.trainingRoughnessStatus, Status.READY);
             lastSession.trainingBreathinessStatus = updateStatus(lastSession.trainingBreathinessStatus, Status.READY);
           } else {
             lastSession.assessmentStatus = updateStatus(lastSession.assessmentStatus, Status.READY);
           }
-          userProgress.sessions[lastSessionIndex] = lastSession;
           userProgress.status = Status.READY;
           userProgress.timeoutEndDate = null;
         }
-        break;
       case "READY":
         // If the due date has passed
         if (dueDate && now.isAfter(dueDate)) {
+          ["trainingRoughnessStatus", "trainingBreathinessStatus", "assessmentStatus"].forEach((status) => {
+            if (lastSession[status] === Status.READY) {
+              lastSession[status] = Status.INVALID;
+            }
+          });
           userProgress.status = Status.INVALID;
           userProgress.nextDueDate = null;
         }
         break;
     }
+
+    userProgress.sessions[lastSessionIndex] = lastSession;
 
     await Promise.all([
       strapi.entityService.update("api::user-progress.user-progress", userProgress.id, {
