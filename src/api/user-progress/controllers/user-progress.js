@@ -280,8 +280,13 @@ module.exports = createCoreController("api::user-progress.user-progress", ({ str
 
     switch (userProgress.status) {
       case Status.WAITING:
+        // If the due date has passed
+        if (dueDate && now.isAfter(dueDate)) {
+          userProgress.status = Status.INVALID;
+          userProgress.nextDueDate = null;
+        }
         // If the timeout has ended
-        if (timeoutEnd && now.isAfter(timeoutEnd)) {
+        else if (timeoutEnd && now.isAfter(timeoutEnd)) {
           if (assessmentIsOver) {
             lastSession.trainingRoughnessStatus = updateStatus(lastSession.trainingRoughnessStatus, Status.READY);
             lastSession.trainingBreathinessStatus = updateStatus(lastSession.trainingBreathinessStatus, Status.READY);
@@ -290,11 +295,6 @@ module.exports = createCoreController("api::user-progress.user-progress", ({ str
           }
           userProgress.status = Status.READY;
           userProgress.timeoutEndDate = null;
-        }
-        // If the due date has passed
-        else if (dueDate && now.isAfter(dueDate)) {
-          userProgress.status = Status.INVALID;
-          userProgress.nextDueDate = null;
         }
         break;
       case "READY":
