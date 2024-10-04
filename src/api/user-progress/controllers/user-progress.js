@@ -293,6 +293,7 @@ module.exports = createCoreController("api::user-progress.user-progress", ({ str
           } else {
             lastSession.assessmentStatus = updateStatus(lastSession.assessmentStatus, Status.READY);
           }
+          userProgress.sessions[lastSessionIndex] = lastSession;
           userProgress.status = Status.READY;
           userProgress.timeoutEndDate = null;
         }
