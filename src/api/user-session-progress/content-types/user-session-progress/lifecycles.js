@@ -47,6 +47,18 @@ async function handleAfterUpdate(event) {
 
   const eventName = String(event.state);
 
+  const statuses = {
+    roughness: result.trainingRoughnessStatus,
+    breathiness: result.trainingBreathinessStatus,
+    assessment: result.assessmentStatus,
+  };
+
+  updatedUserProgress.status = Object.values(statuses).includes(Status.INVALID)
+    ? Status.INVALID
+    : Object.values(statuses).includes(Status.READY)
+    ? Status.READY
+    : Status.WAITING;
+
   switch (eventName) {
     case "1-day-cooldown":
       await handleOneDayCooldown({

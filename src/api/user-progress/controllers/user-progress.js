@@ -297,7 +297,7 @@ module.exports = createCoreController("api::user-progress.user-progress", ({ str
           userProgress.status = Status.READY;
           userProgress.timeoutEndDate = null;
         }
-      case "READY":
+      case Status.READY:
         // If the due date has passed
         if (dueDate && now.isAfter(dueDate)) {
           ["trainingRoughnessStatus", "trainingBreathinessStatus", "assessmentStatus"].forEach((status) => {
