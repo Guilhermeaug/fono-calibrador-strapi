@@ -7,9 +7,11 @@ const { createCoreController } = require("@strapi/strapi").factories;
 const yup = require("yup");
 const dayjs = require("dayjs");
 const { Status } = require("../constants");
+const { validateYupSchema } = require("../../../utils/validateSchema");
 
 module.exports = createCoreController("api::user-progress.user-progress", ({ strapi }) => ({
   answerService: strapi.services["api::answer.answer"],
+  userProgressService: strapi.services["api::user-progress.user-progress"],
 
   async submitAssessment(ctx) {
     const input = ctx.request.body;
@@ -29,17 +31,32 @@ module.exports = createCoreController("api::user-progress.user-progress", ({ str
       ),
     });
 
-    try {
-      await schema.validate(input);
-    } catch (error) {
+    const errors = await validateYupSchema(schema, input);
+    if (errors) {
       ctx.status = 400;
       ctx.body = {
-        error: error.message,
+        error: errors,
       };
       return;
     }
 
     const { programId, startDate, endDate, audios } = input;
+
+    const userProgress = await strapi.db.query("api::user-progress.user-progress").findOne({
+      populate: ["sessions"],
+      where: {
+        program: programId,
+        user: ctx.state.user.id,
+      },
+    });
+
+    if (userProgress.status !== Status.READY) {
+      ctx.status = 400;
+      ctx.body = {
+        error: "User progress is not ready",
+      };
+      return;
+    }
 
     const program = await strapi.entityService.findOne("api::program.program", programId, {
       populate: {
@@ -48,13 +65,6 @@ module.exports = createCoreController("api::user-progress.user-progress", ({ str
         },
       },
     });
-
-    if (!program) {
-      ctx.status = 400;
-      ctx.body = {
-        error: "Program not found",
-      };
-    }
 
     const roughnessResults = [];
     const breathinessResults = [];
@@ -91,13 +101,6 @@ module.exports = createCoreController("api::user-progress.user-progress", ({ str
       });
     }
 
-    const userProgress = await strapi.db.query("api::user-progress.user-progress").findOne({
-      populate: ["sessions"],
-      where: {
-        program: programId,
-        user: ctx.state.user.id,
-      },
-    });
     const userSessionsLength = userProgress.sessions.length;
     const lastSessionId = userProgress.sessions[userSessionsLength - 1].id;
     const res = await strapi.entityService.update("api::user-session-progress.user-session-progress", lastSessionId, {
@@ -140,12 +143,11 @@ module.exports = createCoreController("api::user-progress.user-progress", ({ str
       ),
     });
 
-    try {
-      await schema.validate(input);
-    } catch (error) {
+    const errors = await validateYupSchema(schema, input);
+    if (errors) {
       ctx.status = 400;
       ctx.body = {
-        error: error.message,
+        error: errors,
       };
       return;
     }
@@ -159,6 +161,15 @@ module.exports = createCoreController("api::user-progress.user-progress", ({ str
         user: ctx.state.user.id,
       },
     });
+
+    if (userProgress.status !== Status.READY) {
+      ctx.status = 400;
+      ctx.body = {
+        error: "User progress is not ready",
+      };
+      return;
+    }
+
     const userSessionsLength = userProgress.sessions.length;
     const lastSession = userProgress.sessions[userSessionsLength - 1];
     if (["DONE", "NOT_NEEDED"].includes(lastSession.assessmentStatus) === false) {
@@ -300,35 +311,10 @@ module.exports = createCoreController("api::user-progress.user-progress", ({ str
       case Status.READY:
         // If the due date has passed
         if (dueDate && now.isAfter(dueDate)) {
-          ["trainingRoughnessStatus", "trainingBreathinessStatus", "assessmentStatus"].forEach((status) => {
-            if (lastSession[status] === Status.READY) {
-              lastSession[status] = Status.INVALID;
-            }
-          });
-          userProgress.status = Status.INVALID;
-          userProgress.nextDueDate = null;
+          await this.userProgressService.invalidate(userProgress.id);
         }
         break;
     }
-
-    userProgress.sessions[lastSessionIndex] = lastSession;
-
-    await Promise.all([
-      strapi.entityService.update("api::user-progress.user-progress", userProgress.id, {
-        data: {
-          status: userProgress.status,
-          nextDueDate: userProgress.nextDueDate,
-          timeoutEndDate: userProgress.timeoutEndDate,
-        },
-      }),
-      strapi.entityService.update("api::user-session-progress.user-session-progress", lastSession.id, {
-        data: {
-          trainingRoughnessStatus: lastSession.trainingRoughnessStatus,
-          trainingBreathinessStatus: lastSession.trainingBreathinessStatus,
-          assessmentStatus: lastSession.assessmentStatus,
-        },
-      }),
-    ]);
 
     ctx.body = userProgress;
     ctx.status = 200;
@@ -400,6 +386,50 @@ module.exports = createCoreController("api::user-progress.user-progress", ({ str
     });
 
     ctx.status = 200;
+    ctx.body = updated;
+  },
+
+  async clearTimeout(ctx) {
+    const schema = yup.object().shape({
+      userId: yup.number().required(),
+    });
+
+    const errors = await validateYupSchema(schema, ctx.request.body);
+    if (errors) {
+      ctx.status = 400;
+      ctx.body = {
+        error: errors,
+      };
+      return;
+    }
+
+    const { programId = 1, userId } = ctx.request.body;
+
+    const userProgress = await strapi.db.query("api::user-progress.user-progress").findOne({
+      where: {
+        program: programId,
+        user: userId,
+      },
+    });
+    const updatedUserProgress = {};
+
+    if (userProgress.status === Status.WAITING) {
+      updatedUserProgress.status = Status.READY;
+      updatedUserProgress.timeoutEndDate = null;
+    }
+
+    ctx.status = 200;
+    if (Object.keys(updatedUserProgress).length === 0) {
+      ctx.body = userProgress
+      return;
+    }
+
+    const updated = await strapi.entityService.update("api::user-progress.user-progress", userProgress.id, {
+      data: {
+        status: updatedUserProgress.status,
+        timeoutEndDate: updatedUserProgress.timeoutEndDate,
+      },
+    });
     ctx.body = updated;
   },
 }));

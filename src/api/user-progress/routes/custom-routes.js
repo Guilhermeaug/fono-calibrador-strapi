@@ -22,5 +22,10 @@ module.exports = {
       path: '/users-progress/restartSessions',
       handler: 'user-progress.restartSessions',
     },
+    {
+      method: 'POST',
+      path: '/users-progress/clearTimeout',
+      handler: 'user-progress.clearTimeout',
+    },
   ]
 }

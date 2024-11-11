@@ -77,8 +77,14 @@ async function handleAfterUpdate(event) {
   }
 
   if (Object.keys(updatedUserProgress).length > 0) {
+    const { newSessionId, ...data } = updatedUserProgress;
     await strapi.entityService.update("api::user-progress.user-progress", userProgress.id, {
-      data: updatedUserProgress,
+      data: {
+        ...data,
+        sessions: {
+          connect: [newSessionId],
+        },
+      },
     });
   }
 }
@@ -138,8 +144,8 @@ async function handleSevenDayCooldown({ updatedUserProgress, user, program, sess
     await strapi.entityService.update("plugin::users-permissions.user", user.id, {
       data: {
         finalPacStatus: "READY",
-      }
-    })
+      },
+    });
     emailService.sendEmailTemplate(email, EmailTemplateReference.PROGRAM_COMPLETED, {
       user: { name },
     });
@@ -164,7 +170,7 @@ async function handleSevenDayCooldown({ updatedUserProgress, user, program, sess
   const newSession = await strapi.entityService.create("api::user-session-progress.user-session-progress", {
     data: { assessmentStatus: newSessionAssessmentStatus },
   });
-  updatedUserProgress.sessions = [...sessions.map((s) => s.id), newSession.id];
+  updatedUserProgress.newSessionId = newSession.id;
 
   emailService.sendEmailTemplate(email, EmailTemplateReference.SEVEN_DAY_COOLDOWN, {
     user: { name },
@@ -243,9 +249,10 @@ function formatEmailDate(date) {
     hour: date.hour(),
   };
 }
+
 async function findUserProgressBySessionId(sessionId) {
   try {
-    return await strapi.db.query("api::user-progress.user-progress").findOne({
+    return strapi.db.query("api::user-progress.user-progress").findOne({
       populate: {
         sessions: true,
         program: true,

@@ -37,4 +37,30 @@ module.exports = {
       rule: isTesting ? "*/1 * * * *" : "0 * * * *",
     },
   },
+  updateUsersProgress: {
+    task: async ({ strapi }) => {
+      strapi.log.info("Running update-users-progress cronjob");
+
+      const userProgressService = strapi.services["api::user-progress.user-progress"];
+
+      const now = dayjs().toISOString();
+      const usersThatNeedUpdate = await strapi.entityService.findMany("api::user-progress.user-progress", {
+        filters: {
+          nextDueDate: {
+            $lte: now,
+          },
+        },
+      });
+      strapi.log.info(`Found ${usersThatNeedUpdate.length} users to be updated`);
+
+      await Promise.all(
+        usersThatNeedUpdate.map(async (userProgress) => {
+          userProgressService.invalidate(userProgress.id);
+        })
+      );
+    },
+    options: {
+      rule: "15 * * * *",
+    },
+  },
 };
