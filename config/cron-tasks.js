@@ -1,7 +1,11 @@
 const dayjs = require("dayjs");
+const utc = require("dayjs/plugin/utc");
+
 const { env } = require("@strapi/utils");
 
 const isTesting = env.bool("IS_TESTING", false);
+
+dayjs.extend(utc);
 
 module.exports = {
   emailQueue: {
@@ -10,7 +14,7 @@ module.exports = {
 
       const emailService = strapi.services["api::email.email"];
 
-      const now = dayjs().toISOString();
+      const now = dayjs().utc().toISOString();
       const emailsInQueue = await strapi.entityService.findMany("api::email-queue.email-queue", {
         filters: {
           scheduledTime: {
@@ -43,7 +47,7 @@ module.exports = {
 
       const userProgressService = strapi.services["api::user-progress.user-progress"];
 
-      const now = dayjs().toISOString();
+      const now = dayjs().utc().toISOString();
       const usersThatNeedUpdate = await strapi.entityService.findMany("api::user-progress.user-progress", {
         filters: {
           nextDueDate: {
@@ -60,7 +64,7 @@ module.exports = {
       );
     },
     options: {
-      rule: "15 * * * *",
+      rule: "5 * * * *",
     },
   },
 };
