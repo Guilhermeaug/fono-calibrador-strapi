@@ -308,6 +308,20 @@ module.exports = createCoreController("api::user-progress.user-progress", ({ str
           }
           userProgress.status = Status.READY;
           userProgress.timeoutEndDate = null;
+
+          await strapi.entityService.update("api::user-progress.user-progress", userProgress.id, {
+            data: {
+              status: userProgress.status,
+              timeoutEndDate: userProgress.timeoutEndDate,
+            },
+          });
+          await strapi.entityService.update("api::user-session-progress.user-session-progress", lastSession.id, {
+            data: {
+              trainingRoughnessStatus: lastSession.trainingRoughnessStatus,
+              trainingBreathinessStatus: lastSession.trainingBreathinessStatus,
+              assessmentStatus: lastSession.assessmentStatus,
+            },
+          });
         }
       case Status.READY:
         // If the due date has passed
