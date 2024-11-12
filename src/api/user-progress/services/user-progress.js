@@ -15,7 +15,8 @@ module.exports = createCoreService("api::user-progress.user-progress", ({ strapi
     });
 
     if (!userProgress || !userProgress.sessions) {
-      throw new Error(`User progress with id ${userProgressId} not found`);
+      strapi.log.error(`User progress with id ${userProgressId} not found`);
+      return userProgress;
     }
 
     const lastSessionIdx = userProgress.sessions.length - 1;

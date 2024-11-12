@@ -81,9 +81,7 @@ async function handleAfterUpdate(event) {
     await strapi.entityService.update("api::user-progress.user-progress", userProgress.id, {
       data: {
         ...data,
-        sessions: {
-          connect: [newSessionId],
-        },
+        ...(newSessionId && { sessions: { connect: [newSessionId] } }),
       },
     });
   }

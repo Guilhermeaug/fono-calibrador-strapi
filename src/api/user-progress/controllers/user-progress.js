@@ -122,6 +122,7 @@ module.exports = createCoreController("api::user-progress.user-progress", ({ str
     });
 
     ctx.body = res;
+    ctx.status = 200;
   },
 
   async submitTraining(ctx) {
