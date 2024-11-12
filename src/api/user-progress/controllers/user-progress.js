@@ -456,12 +456,6 @@ module.exports = createCoreController("api::user-progress.user-progress", ({ str
         lastSession.trainingBreathinessStatus === Status.WAITING ? Status.READY : lastSession.trainingBreathinessStatus;
     }
 
-    const updated = await strapi.entityService.update("api::user-progress.user-progress", userProgress.id, {
-      data: {
-        status: updatedUserProgress.status,
-        timeoutEndDate: updatedUserProgress.timeoutEndDate,
-      },
-    });
     await strapi.entityService.update("api::user-session-progress.user-session-progress", lastSession.id, {
       data: {
         assessmentStatus: lastSession.assessmentStatus,
@@ -469,8 +463,12 @@ module.exports = createCoreController("api::user-progress.user-progress", ({ str
         trainingBreathinessStatus: lastSession.trainingBreathinessStatus,
       },
     });
-
-    updated.sessions[lastSessionIndex] = lastSession;
+    const updated = await strapi.entityService.update("api::user-progress.user-progress", userProgress.id, {
+      data: {
+        status: updatedUserProgress.status,
+        timeoutEndDate: updatedUserProgress.timeoutEndDate,
+      },
+    });
 
     ctx.body = updated;
   },
