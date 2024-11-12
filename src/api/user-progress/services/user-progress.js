@@ -10,7 +10,7 @@ const { createCoreService } = require("@strapi/strapi").factories;
 
 module.exports = createCoreService("api::user-progress.user-progress", ({ strapi }) => ({
   invalidate: async (userProgressId) => {
-    const userProgress = strapi.entityService.findOne("api::user-progress.user-progress", userProgressId, {
+    const userProgress = await strapi.entityService.findOne("api::user-progress.user-progress", userProgressId, {
       populate: ["sessions"],
     });
 
