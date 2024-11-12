@@ -429,6 +429,7 @@ module.exports = createCoreController("api::user-progress.user-progress", ({ str
         program: programId,
         user: userId,
       },
+      populate: ["sessions"],
     });
     const updatedUserProgress = {};
 
