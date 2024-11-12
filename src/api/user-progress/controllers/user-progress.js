@@ -296,6 +296,8 @@ module.exports = createCoreController("api::user-progress.user-progress", ({ str
       lastSession.assessmentStatus === Status.DONE || lastSession.assessmentStatus === Status.NOT_NEEDED;
     const updateStatus = (current, next) => (current !== Status.DONE && current !== Status.NOT_NEEDED ? next : current);
 
+    let updatedUserProgress = userProgress;
+
     switch (userProgress.status) {
       case Status.WAITING:
         // If the timeout date has passed
@@ -309,7 +311,7 @@ module.exports = createCoreController("api::user-progress.user-progress", ({ str
           userProgress.status = Status.READY;
           userProgress.timeoutEndDate = null;
 
-          await strapi.entityService.update("api::user-progress.user-progress", userProgress.id, {
+          updatedUserProgress = await strapi.entityService.update("api::user-progress.user-progress", userProgress.id, {
             data: {
               status: userProgress.status,
               timeoutEndDate: userProgress.timeoutEndDate,
@@ -322,16 +324,18 @@ module.exports = createCoreController("api::user-progress.user-progress", ({ str
               assessmentStatus: lastSession.assessmentStatus,
             },
           });
+
+          userProgress.sessions[lastSessionIndex] = lastSession;
         }
       case Status.READY:
         // If the due date has passed
         if (dueDate && now.isAfter(dueDate)) {
-          await this.userProgressService.invalidate(userProgress.id);
+          updatedUserProgress = await this.userProgressService.invalidate(userProgress.id);
         }
         break;
     }
 
-    ctx.body = userProgress;
+    ctx.body = updatedUserProgress;
     ctx.status = 200;
   },
 
@@ -435,7 +439,7 @@ module.exports = createCoreController("api::user-progress.user-progress", ({ str
 
     ctx.status = 200;
     if (Object.keys(updatedUserProgress).length === 0) {
-      ctx.body = userProgress
+      ctx.body = userProgress;
       return;
     }
 
