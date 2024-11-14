@@ -1,6 +1,6 @@
 "use strict";
 
-const revalidationClient = require("../../../../utils/revalidationClient");
+const revalidationClient = require("../../../../utils/revalidation-client");
 
 module.exports = {
   async afterUpdate(event) {

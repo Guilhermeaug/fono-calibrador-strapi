@@ -1,76 +1,23 @@
 "use strict";
 
-var ss = require("simple-statistics");
-
-function forecast(x, ky, kx) {
-  if (ky.length !== kx.length) {
-    throw new Error("The length of ky and kx must be the same.");
-  }
-
-  let i = 0,
-    nr = 0,
-    dr = 0,
-    ax = 0,
-    ay = 0,
-    a = 0,
-    b = 0;
-
-  ax = ss.mean(kx);
-  ay = ss.mean(ky);
-
-  for (i = 0; i < kx.length; i++) {
-    nr += (kx[i] - ax) * (ky[i] - ay);
-    dr += (kx[i] - ax) * (kx[i] - ax);
-  }
-
-  b = nr / dr;
-  a = ay - b * ax;
-
-  return a + b * x;
-}
-
-function calculate(values, answer) {
-  const maxValue = ss.max(values);
-  const minValue = ss.min(values);
-
-  let result = 0;
-
-  if (answer <= maxValue && answer >= minValue) {
-    result += 0;
-  } else {
-    result += 0;
-  }
-
-  if (answer >= maxValue) {
-    result += Math.abs(maxValue - answer);
-  } else {
-    result += 0;
-  }
-
-  if (answer <= minValue) {
-    result += Math.abs(minValue - answer);
-  } else {
-    result += 0;
-  }
-
-  return result;
-}
+const simpleStats = require("simple-statistics");
+const answerHelpers = require("../helpers");
 
 module.exports = () => ({
   computeScore({ answer, values, threshold = 100 }) {
-    const max = ss.max(values);
-    const min = ss.min(values);
+    const max = simpleStats.max(values);
+    const min = simpleStats.min(values);
     const topScore = 100;
     const minScore = 0;
 
-    const convertedAnswer = calculate(values, answer);
+    const convertedAnswer = answerHelpers.calculate(values, answer);
     const diffMaxMin = Math.abs(topScore - max);
     const diffMinMin = Math.abs(minScore - min);
 
-    let score = forecast(
+    let score = answerHelpers.forecast(
       convertedAnswer,
       [1, 0],
-      [0, ss.max([diffMaxMin, diffMinMin])]
+      [0, simpleStats.max([diffMaxMin, diffMinMin])]
     );
     score = +(score * 100).toFixed(2);
 
@@ -79,5 +26,76 @@ module.exports = () => ({
       score,
       result,
     };
+  },
+  computeAssessmentResults({ audios, assessment }) {
+    const assessmentMap = new Map(
+      assessment.map((item) => [
+        item.identifier,
+        {
+          roughness: item.roughness.map(Number),
+          breathiness: item.breathiness.map(Number),
+        },
+      ])
+    );
+
+    return {
+      roughnessResults: audios.map((audio) => {
+        const { duration, identifier, numberOfAudioClicks, roughness } = audio;
+        const reference = assessmentMap.get(identifier);
+
+        return {
+          identifier,
+          duration,
+          numberOfAudioClicks,
+          score: this.computeScore({
+            answer: roughness,
+            values: reference.roughness,
+          }).score,
+          answer: roughness,
+        };
+      }),
+      breathinessResults: audios.map((audio) => {
+        const { duration, identifier, numberOfAudioClicks, breathiness } = audio;
+        const reference = assessmentMap.get(identifier);
+
+        return {
+          identifier,
+          duration,
+          numberOfAudioClicks,
+          score: this.computeScore({
+            answer: breathiness,
+            values: reference.breathiness,
+          }).score,
+          answer: breathiness,
+        };
+      }),
+    };
+  },
+  computeTrainingResults({ audios, training, feature }) {
+    const trainingMap = new Map(
+      training.map((item) => [
+        item.identifier,
+        {
+          value: item[feature].map(Number),
+        },
+      ])
+    );
+
+    return audios.map((audio) => {
+      const { duration, identifier, numberOfAttempts, numberOfAudioClicks, value } = audio;
+      const reference = trainingMap.get(identifier);
+
+      return {
+        identifier,
+        duration,
+        numberOfAttempts,
+        numberOfAudioClicks,
+        score: this.computeScore({
+          answer: value,
+          values: reference.value,
+        }).score,
+        answer: value,
+      };
+    });
   },
 });
