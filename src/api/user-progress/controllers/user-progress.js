@@ -4,6 +4,7 @@ const { createCoreController } = require("@strapi/strapi").factories;
 
 const { Features } = require("../../../constants");
 const { validateYupSchema } = require("../../../helpers");
+const { emailTemplateReference } = require("../../email/constants");
 const { Status } = require("../constants");
 const schemas = require("./schemas");
 
@@ -12,9 +13,28 @@ const dayjs = require("dayjs");
 const updateStatus = (current, next) =>
   current !== Status.DONE && current !== Status.NOT_NEEDED ? next : current;
 
+async function scheduleEmailToQueue({ to, scheduledTime, templateReferenceId, templateData }) {
+  return strapi.entityService.create("api::email-queue.email-queue", {
+    data: {
+      to,
+      scheduledTime,
+      templateReferenceId,
+      data: templateData,
+    },
+  });
+}
+
+function formatEmailDate(date) {
+  return {
+    day: date.format("DD/MM"),
+    hour: date.hour(),
+  };
+}
+
 module.exports = createCoreController("api::user-progress.user-progress", ({ strapi }) => ({
   answerService: strapi.services["api::answer.answer"],
   userProgressService: strapi.services["api::user-progress.user-progress"],
+  emailService: strapi.services["api::email.email"],
 
   async submitAssessment(ctx) {
     const input = ctx.request.body;
@@ -94,7 +114,7 @@ module.exports = createCoreController("api::user-progress.user-progress", ({ str
       }),
     ]);
 
-    return ctx.ok(res);
+    return ctx.send(res, 200);
   },
 
   async submitTraining(ctx) {
@@ -130,6 +150,7 @@ module.exports = createCoreController("api::user-progress.user-progress", ({ str
     const userSessionsLength = userProgress.sessions.length;
     const isLastSession = userSessionsLength === program.numberOfSessions;
     const lastSession = userProgress.sessions.pop();
+    const favoriteFeature = userProgress.favoriteFeature ?? input.feature;
 
     if ([Status.DONE, Status.NOT_NEEDED].includes(lastSession.assessmentStatus) === false) {
       return ctx.badRequest("Assessment is not done");
@@ -161,51 +182,62 @@ module.exports = createCoreController("api::user-progress.user-progress", ({ str
         : updateStatus(lastSession.trainingRoughnessStatus, Status.WAITING);
     }
 
-    const calculateDueDate = () => {
-      if (isAnyTrainingWaiting || isAnyTrainingReady) {
-        return dayjs(input.startDate).add(2, "day").toISOString();
-      }
-      if (areAllStatusDone && !isLastSession) {
-        return dayjs(lastSession.assessmentRoughnessResults.startDate).add(8, "day").toISOString();
-      }
-      return null;
-    };
-
-    const calculateTimeoutEndDate = () => {
-      if (isAnyTrainingWaiting) {
-        return dayjs(input.startDate).add(1, "day").startOf("hour").toISOString();
-      }
-      if (areAllStatusDone && !isLastSession) {
-        return dayjs(lastSession.assessmentRoughnessResults.startDate)
-          .add(7, "day")
-          .startOf("hour")
-          .toISOString();
-      }
-      return null;
-    };
-
     const statuses = {
       roughness: updatedSession.trainingRoughnessStatus,
       breathiness: updatedSession.trainingBreathinessStatus,
       assessment: lastSession.assessmentStatus,
     };
     const statusValues = Object.values(statuses);
-    const areAllStatusDone = statusValues.every((status) => status === Status.DONE);
+    const areAllStatusFinished = statusValues.every(
+      (status) => status === Status.DONE || status === Status.NOT_NEEDED
+    );
     const isAnyStatusReady = statusValues.includes(Status.READY);
     const trainingStatuses = [statuses.roughness, statuses.breathiness];
     const isAnyTrainingWaiting = trainingStatuses.includes(Status.WAITING);
     const isAnyTrainingReady = trainingStatuses.includes(Status.READY);
 
+    const getFavoriteFeatureStartDate = () => {
+      if (favoriteFeature === Features.Roughness) {
+        return lastSession.trainingRoughnessResults.startDate;
+      } else if (favoriteFeature === Features.Breathiness) {
+        return lastSession.trainingBreathinessResults.startDate;
+      }
+    };
+
+    const calculateDueDate = () => {
+      const lastWeekSessionMarker =
+        lastSession.assessmentRoughnessResults?.startDate || getFavoriteFeatureStartDate;
+      if (isAnyTrainingWaiting || isAnyTrainingReady) {
+        return dayjs(input.startDate).add(2, "day");
+      }
+      if (areAllStatusFinished && !isLastSession) {
+        return dayjs(lastWeekSessionMarker).add(8, "day");
+      }
+      return null;
+    };
+
+    const calculateTimeoutEndDate = () => {
+      const lastWeekSessionMarker =
+        lastSession.assessmentRoughnessResults?.startDate || getFavoriteFeatureStartDate;
+      if (isAnyTrainingWaiting) {
+        return [dayjs(input.startDate).add(1, "day").startOf("hour"), 1];
+      }
+      if (areAllStatusFinished && !isLastSession) {
+        return [dayjs(lastWeekSessionMarker).add(7, "day").startOf("hour"), 7];
+      }
+      return [null, null];
+    };
+
     const newUserStatus =
-      areAllStatusDone && isLastSession
+      areAllStatusFinished && isLastSession
         ? Status.DONE
         : isAnyStatusReady
         ? Status.READY
         : Status.WAITING;
     const nextDueDate = calculateDueDate();
-    const timeoutEndDate = calculateTimeoutEndDate();
+    const [timeoutEndDate, totalDaysOfTimeout] = calculateTimeoutEndDate();
 
-    const needToCreateExtraSession = !isLastSession && areAllStatusDone;
+    const needToCreateExtraSession = !isLastSession && areAllStatusFinished;
     let newSessionId;
     if (needToCreateExtraSession) {
       const isAssessmentNeeded = (userSessionsLength + 1) % 3 === 0;
@@ -222,6 +254,23 @@ module.exports = createCoreController("api::user-progress.user-progress", ({ str
       newSessionId = newSession.id;
     }
 
+    const { email, name } = auth;
+
+    let emailSchedulePromise = Promise.resolve();
+    if (timeoutEndDate && totalDaysOfTimeout) {
+      emailSchedulePromise = scheduleEmailToQueue({
+        to: email,
+        scheduledTime: timeoutEndDate,
+        templateReferenceId: emailTemplateReference.reminder,
+        templateData: { user: { name } },
+      });
+      this.emailService.sendEmailTemplate(email, emailTemplateReference.cooldown, {
+        user: { name },
+        startDate: formatEmailDate(timeoutEndDate),
+        endDate: formatEmailDate(nextDueDate),
+      });
+    }
+
     const [res] = await Promise.all([
       strapi.entityService.update(
         "api::user-session-progress.user-session-progress",
@@ -233,12 +282,14 @@ module.exports = createCoreController("api::user-progress.user-progress", ({ str
           status: newUserStatus,
           nextDueDate,
           timeoutEndDate,
+          favoriteFeature,
           ...(newSessionId && { sessions: { connect: [newSessionId] } }),
         },
       }),
+      emailSchedulePromise,
     ]);
 
-    return ctx.ok(res);
+    return ctx.send(res, 200);
   },
 
   async alignProgress(ctx) {
@@ -251,8 +302,11 @@ module.exports = createCoreController("api::user-progress.user-progress", ({ str
 
     const errors = await validateYupSchema(schemas.alignProgressSchema, input);
     if (errors) {
+      strapi.log.error(errors);
       return ctx.badRequest(errors);
     }
+
+    strapi.log.info("Aligning progress for user " + auth.id);
 
     const userProgress = await strapi.db.query("api::user-progress.user-progress").findOne({
       where: {
@@ -262,10 +316,11 @@ module.exports = createCoreController("api::user-progress.user-progress", ({ str
       populate: ["sessions"],
     });
     if (!userProgress) {
+      strapi.log.error("User progress not found " + auth.id);
       return ctx.badRequest("Cannot process the request");
     }
     if (userProgress.status === Status.INVALID) {
-      return ctx.ok(userProgress);
+      return ctx.send(userProgress, 200);
     }
 
     const lastSessionIndex = userProgress.sessions.length - 1;
@@ -291,14 +346,13 @@ module.exports = createCoreController("api::user-progress.user-progress", ({ str
         }
         return { trainingRoughnessStatus: Status.READY };
       }
-
       return { trainingRoughnessStatus: Status.READY, trainingBreathinessStatus: Status.READY };
     };
 
     const handleStatusWaiting = async () => {
       if (nextDueDate && now.isAfter(nextDueDate)) {
         const invalidatedUser = await this.userProgressService.invalidate(userProgress.id);
-        return ctx.ok(invalidatedUser);
+        return ctx.send(invalidatedUser, 200);
       }
 
       if (timeoutEndDate && now.isAfter(timeoutEndDate)) {
@@ -316,7 +370,7 @@ module.exports = createCoreController("api::user-progress.user-progress", ({ str
     const handleStatusReady = async () => {
       if (nextDueDate && now.isAfter(nextDueDate)) {
         const invalidatedUser = await this.userProgressService.invalidate(userProgress.id);
-        return ctx.ok(invalidatedUser);
+        return ctx.send(invalidatedUser, 200);
       }
     };
 
@@ -324,6 +378,7 @@ module.exports = createCoreController("api::user-progress.user-progress", ({ str
     let updatedSession = {};
     switch (userProgress.status) {
       case Status.WAITING:
+        console.log("Handling waiting status");
         const waitingResult = await handleStatusWaiting();
         if (waitingResult && typeof waitingResult === "object") {
           updatedSession = waitingResult.updatedSessionData;
@@ -363,7 +418,7 @@ module.exports = createCoreController("api::user-progress.user-progress", ({ str
     }
     await Promise.all(updatePromises);
 
-    return ctx.ok(userProgress);
+    return ctx.send(userProgress, 200);
   },
 
   async restartSessions(ctx) {
