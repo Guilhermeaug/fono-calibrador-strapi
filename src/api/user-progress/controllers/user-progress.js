@@ -25,9 +25,10 @@ async function scheduleEmailToQueue({ to, scheduledTime, templateReferenceId, te
 }
 
 function formatEmailDate(date) {
+  const dateObj = dayjs(date);
   return {
-    day: date.format("DD/MM"),
-    hour: date.hour(),
+    day: dateObj.format("DD/MM"),
+    hour: dateObj.hour(),
   };
 }
 
@@ -132,7 +133,15 @@ module.exports = createCoreController("api::user-progress.user-progress", ({ str
 
     const [userProgress, program] = await Promise.all([
       strapi.db.query("api::user-progress.user-progress").findOne({
-        populate: ["sessions"],
+        populate: {
+          sessions: {
+            populate: [
+              "assessmentRoughnessResults",
+              "trainingRoughnessResults",
+              "trainingBreathinessResults",
+            ],
+          },
+        },
         where: {
           program: input.programId,
           user: auth.id,
@@ -205,25 +214,27 @@ module.exports = createCoreController("api::user-progress.user-progress", ({ str
     };
 
     const calculateDueDate = () => {
-      const lastWeekSessionMarker =
-        lastSession.assessmentRoughnessResults?.startDate || getFavoriteFeatureStartDate;
+      const lastWeekSessionMarker = lastSession.assessmentRoughnessResults?.startDate
+        ? dayjs(lastSession.assessmentRoughnessResults?.startDate)
+        : dayjs(getFavoriteFeatureStartDate());
       if (isAnyTrainingWaiting || isAnyTrainingReady) {
-        return dayjs(input.startDate).add(2, "day");
+        return dayjs(input.startDate).add(2, "day").toISOString();
       }
       if (areAllStatusFinished && !isLastSession) {
-        return dayjs(lastWeekSessionMarker).add(8, "day");
+        return dayjs(lastWeekSessionMarker).add(8, "day").toISOString();
       }
       return null;
     };
 
     const calculateTimeoutEndDate = () => {
-      const lastWeekSessionMarker =
-        lastSession.assessmentRoughnessResults?.startDate || getFavoriteFeatureStartDate;
+      const lastWeekSessionMarker = lastSession.assessmentRoughnessResults?.startDate
+        ? dayjs(lastSession.assessmentRoughnessResults?.startDate)
+        : dayjs(getFavoriteFeatureStartDate());
       if (isAnyTrainingWaiting) {
-        return [dayjs(input.startDate).add(1, "day").startOf("hour"), 1];
+        return [dayjs(input.startDate).add(1, "day").startOf("hour").toISOString(), 1];
       }
       if (areAllStatusFinished && !isLastSession) {
-        return [dayjs(lastWeekSessionMarker).add(7, "day").startOf("hour"), 7];
+        return [dayjs(lastWeekSessionMarker).add(7, "day").startOf("hour").toISOString(), 7];
       }
       return [null, null];
     };
@@ -319,105 +330,22 @@ module.exports = createCoreController("api::user-progress.user-progress", ({ str
       strapi.log.error("User progress not found " + auth.id);
       return ctx.badRequest("Cannot process the request");
     }
-    if (userProgress.status === Status.INVALID) {
-      return ctx.send(userProgress, 200);
-    }
-
-    const lastSessionIndex = userProgress.sessions.length - 1;
-    const lastSession = userProgress.sessions[lastSessionIndex];
 
     const now = dayjs();
     const nextDueDate = userProgress.nextDueDate && dayjs(userProgress.nextDueDate);
     const timeoutEndDate = userProgress.timeoutEndDate && dayjs(userProgress.timeoutEndDate);
 
-    const isAssessmentComplete = [Status.Done, Status.NOT_NEEDED].includes(
-      lastSession.assessmentStatus
-    );
-
-    const updateStatuses = () => {
-      if (userProgress.favoriteFeature === Features.Roughness) {
-        if (lastSession.trainingRoughnessStatus === Status.WAITING) {
-          return { trainingRoughnessStatus: Status.READY };
-        }
-        return { trainingBreathinessStatus: Status.READY };
-      } else if (userProgress.favoriteFeature === Features.Breathiness) {
-        if (lastSession.trainingBreathinessStatus === Status.WAITING) {
-          return { trainingBreathinessStatus: Status.READY };
-        }
-        return { trainingRoughnessStatus: Status.READY };
-      }
-      return { trainingRoughnessStatus: Status.READY, trainingBreathinessStatus: Status.READY };
-    };
-
-    const handleStatusWaiting = async () => {
-      if (nextDueDate && now.isAfter(nextDueDate)) {
-        const invalidatedUser = await this.userProgressService.invalidate(userProgress.id);
-        return ctx.send(invalidatedUser, 200);
-      }
-
-      if (timeoutEndDate && now.isAfter(timeoutEndDate)) {
-        const updatedSessionData = isAssessmentComplete
-          ? updateStatuses()
-          : { assessmentStatus: Status.READY };
-        const updatedUserProgressData = {
-          status: Status.READY,
-          timeoutEndDate: null,
-        };
-        return { updatedSessionData, updatedUserProgressData };
-      }
-    };
-
-    const handleStatusReady = async () => {
-      if (nextDueDate && now.isAfter(nextDueDate)) {
-        const invalidatedUser = await this.userProgressService.invalidate(userProgress.id);
-        return ctx.send(invalidatedUser, 200);
-      }
-    };
-
-    let updatedUserProgress = {};
-    let updatedSession = {};
-    switch (userProgress.status) {
-      case Status.WAITING:
-        console.log("Handling waiting status");
-        const waitingResult = await handleStatusWaiting();
-        if (waitingResult && typeof waitingResult === "object") {
-          updatedSession = waitingResult.updatedSessionData;
-          updatedUserProgress = waitingResult.updatedUserProgressData;
-        } else {
-          return;
-        }
-        break;
-      case Status.READY:
-        await handleStatusReady();
-        break;
-      default:
-        break;
+    if (nextDueDate && now.isAfter(nextDueDate)) {
+      const updatedUserProgress = await this.userProgressService.invalidate(userProgress.id);
+      return ctx.send(updatedUserProgress, 200);
     }
 
-    userProgress.sessions[lastSessionIndex] = {
-      ...lastSession,
-      ...updatedSession,
-    };
-
-    const updatePromises = [];
-    if (Object.keys(updatedSession).length) {
-      updatePromises.push(
-        strapi.entityService.update(
-          "api::user-session-progress.user-session-progress",
-          lastSession.id,
-          { data: updatedSession }
-        )
-      );
+    if (timeoutEndDate && now.isAfter(timeoutEndDate)) {
+      const updatedUserProgress = await this.userProgressService.unlock(userProgress.id);
+      return ctx.send(updatedUserProgress, 200);
     }
-    if (Object.keys(updatedUserProgress).length) {
-      updatePromises.push(
-        strapi.entityService.update("api::user-progress.user-progress", userProgress.id, {
-          data: updatedUserProgress,
-        })
-      );
-    }
-    await Promise.all(updatePromises);
 
+    strapi.log.info("Progress is already aligned for user " + auth.id);
     return ctx.send(userProgress, 200);
   },
 

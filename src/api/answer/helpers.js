@@ -1,39 +1,56 @@
 const simpleStats = require("simple-statistics");
 
 module.exports = {
-  forecast(targetX, knownX, knownY) {
-    const meanX = simpleStats.mean(knownX);
-    const meanY = simpleStats.mean(knownY);
-
-    let numerator = 0;
-    let denominator = 0;
-
-    for (let i = 0; i < knownX.length; i++) {
-      const deviationX = knownX[i] - meanX;
-      const deviationY = knownY[i] - meanY;
-      numerator += deviationX * deviationY;
-      denominator += deviationX * deviationX;
+  forecast(x, ky, kx) {
+    if (ky.length !== kx.length) {
+      throw new Error("The length of ky and kx must be the same.");
     }
 
-    const slope = numerator / denominator;
-    const intercept = meanY - slope * meanX;
+    let i = 0,
+      nr = 0,
+      dr = 0,
+      ax = 0,
+      ay = 0,
+      a = 0,
+      b = 0;
 
-    return intercept + slope * targetX;
+    ax = simpleStats.mean(kx);
+    ay = simpleStats.mean(ky);
+
+    for (i = 0; i < kx.length; i++) {
+      nr += (kx[i] - ax) * (ky[i] - ay);
+      dr += (kx[i] - ax) * (kx[i] - ax);
+    }
+
+    b = nr / dr;
+    a = ay - b * ax;
+
+    return a + b * x;
   },
-  calculate(dataPoints, targetValue) {
-    const maxValue = simpleStats.max(dataPoints);
-    const minValue = simpleStats.min(dataPoints);
+  calculate(values, answer) {
+    const maxValue = simpleStats.max(values);
+    const minValue = simpleStats.min(values);
 
-    let deviation = 0;
+    let result = 0;
 
-    if (targetValue > maxValue) {
-      deviation += Math.abs(maxValue - targetValue);
+    if (answer <= maxValue && answer >= minValue) {
+      result += 0;
+    } else {
+      result += 0;
     }
 
-    if (targetValue < minValue) {
-      deviation += Math.abs(minValue - targetValue);
+    if (answer >= maxValue) {
+      result += Math.abs(maxValue - answer);
+    } else {
+      result += 0;
     }
 
-    return deviation;
+    if (answer <= minValue) {
+      result += Math.abs(minValue - answer);
+    } else {
+      result += 0;
+    }
+
+    return result;
   },
 };

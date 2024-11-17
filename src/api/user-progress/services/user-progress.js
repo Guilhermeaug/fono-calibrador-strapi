@@ -2,9 +2,74 @@
 
 const { createCoreService } = require("@strapi/strapi").factories;
 
+const { Features } = require("../../../constants");
 const { Status } = require("../constants");
 
 module.exports = createCoreService("api::user-progress.user-progress", ({ strapi }) => ({
+  unlock: async (userProgressId) => {
+    const userProgress = await strapi.entityService.findOne(
+      "api::user-progress.user-progress",
+      userProgressId,
+      {
+        populate: ["sessions"],
+      }
+    );
+    if (!userProgress || !userProgress.sessions) {
+      strapi.log.error(`User progress with id ${userProgressId} not found`);
+      return userProgress;
+    }
+
+    const updateStatuses = () => {
+      if (userProgress.favoriteFeature === Features.Roughness) {
+        if (lastSession.trainingRoughnessStatus === Status.WAITING) {
+          return { trainingRoughnessStatus: Status.READY };
+        }
+        return { trainingBreathinessStatus: Status.READY };
+      } else if (userProgress.favoriteFeature === Features.Breathiness) {
+        if (lastSession.trainingBreathinessStatus === Status.WAITING) {
+          return { trainingBreathinessStatus: Status.READY };
+        }
+        return { trainingRoughnessStatus: Status.READY };
+      }
+      return { trainingRoughnessStatus: Status.READY, trainingBreathinessStatus: Status.READY };
+    };
+
+    const lastSessionIndex = userProgress.sessions.length - 1;
+    const lastSession = userProgress.sessions[lastSessionIndex];
+
+    const isAssessmentComplete = [Status.DONE, Status.NOT_NEEDED].includes(
+      lastSession.assessmentStatus
+    );
+
+    const updatedSessionData = isAssessmentComplete
+      ? updateStatuses()
+      : { assessmentStatus: Status.READY };
+    const updatedUserProgressData = {
+      status: Status.READY,
+      timeoutEndDate: null,
+    };
+
+    const [updatedUser, updatedSession] = await Promise.all([
+      strapi.entityService.update("api::user-progress.user-progress", userProgressId, {
+        data: updatedUserProgressData,
+      }),
+      strapi.entityService.update(
+        "api::user-session-progress.user-session-progress",
+        lastSession.id,
+        {
+          data: updatedSessionData,
+        }
+      ),
+    ]);
+
+    userProgress.sessions[lastSessionIndex] = updatedSession;
+
+    return {
+      ...userProgress,
+      ...updatedUser,
+    }
+  },
+
   invalidate: async (userProgressId) => {
     const userProgress = await strapi.entityService.findOne(
       "api::user-progress.user-progress",
@@ -13,7 +78,6 @@ module.exports = createCoreService("api::user-progress.user-progress", ({ strapi
         populate: ["sessions"],
       }
     );
-
     if (!userProgress || !userProgress.sessions) {
       strapi.log.error(`User progress with id ${userProgressId} not found`);
       return userProgress;
@@ -30,7 +94,7 @@ module.exports = createCoreService("api::user-progress.user-progress", ({ strapi
       }
     );
 
-    await Promise.all([
+    const [updatedUser, updatedSession] = await Promise.all([
       strapi.entityService.update("api::user-progress.user-progress", userProgressId, {
         data: { status: Status.INVALID, nextDueDate: null, timeoutEndDate: null },
       }),
@@ -47,8 +111,11 @@ module.exports = createCoreService("api::user-progress.user-progress", ({ strapi
       ),
     ]);
 
-    userProgress.sessions[lastSessionIndex] = lastSession;
+    userProgress.sessions[lastSessionIndex] = updatedSession;
 
-    return userProgress;
+    return {
+      ...userProgress,
+      ...updatedUser,
+    }
   },
 }));
