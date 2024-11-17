@@ -13,14 +13,9 @@ const dayjs = require("dayjs");
 const updateStatus = (current, next) =>
   current !== Status.DONE && current !== Status.NOT_NEEDED ? next : current;
 
-async function scheduleEmailToQueue({ to, scheduledTime, templateReferenceId, templateData }) {
+async function scheduleEmailToQueue(data) {
   return strapi.entityService.create("api::email-queue.email-queue", {
-    data: {
-      to,
-      scheduledTime,
-      templateReferenceId,
-      data: templateData,
-    },
+    data,
   });
 }
 
@@ -214,26 +209,26 @@ module.exports = createCoreController("api::user-progress.user-progress", ({ str
     };
 
     const calculateDueDate = () => {
-      const lastWeekSessionMarker = lastSession.assessmentRoughnessResults?.startDate
-        ? dayjs(lastSession.assessmentRoughnessResults?.startDate)
-        : dayjs(getFavoriteFeatureStartDate());
       if (isAnyTrainingWaiting || isAnyTrainingReady) {
         return dayjs(input.startDate).add(2, "day").toISOString();
       }
       if (areAllStatusFinished && !isLastSession) {
+        const lastWeekSessionMarker = lastSession.assessmentRoughnessResults?.startDate
+          ? dayjs(lastSession.assessmentRoughnessResults?.startDate)
+          : dayjs(getFavoriteFeatureStartDate());
         return dayjs(lastWeekSessionMarker).add(8, "day").toISOString();
       }
       return null;
     };
 
     const calculateTimeoutEndDate = () => {
-      const lastWeekSessionMarker = lastSession.assessmentRoughnessResults?.startDate
-        ? dayjs(lastSession.assessmentRoughnessResults?.startDate)
-        : dayjs(getFavoriteFeatureStartDate());
       if (isAnyTrainingWaiting) {
         return [dayjs(input.startDate).add(1, "day").startOf("hour").toISOString(), 1];
       }
       if (areAllStatusFinished && !isLastSession) {
+        const lastWeekSessionMarker = lastSession.assessmentRoughnessResults?.startDate
+          ? dayjs(lastSession.assessmentRoughnessResults?.startDate)
+          : dayjs(getFavoriteFeatureStartDate());
         return [dayjs(lastWeekSessionMarker).add(7, "day").startOf("hour").toISOString(), 7];
       }
       return [null, null];
@@ -273,7 +268,8 @@ module.exports = createCoreController("api::user-progress.user-progress", ({ str
         to: email,
         scheduledTime: timeoutEndDate,
         templateReferenceId: emailTemplateReference.reminder,
-        templateData: { user: { name } },
+        data: { user: { name } },
+        userProgress: { connect: [userProgress.id] },
       });
       this.emailService.sendEmailTemplate(email, emailTemplateReference.cooldown, {
         user: { name },

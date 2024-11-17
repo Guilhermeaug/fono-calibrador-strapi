@@ -793,6 +793,11 @@ export interface ApiEmailQueueEmailQueue extends Schema.CollectionType {
     data: Attribute.JSON;
     to: Attribute.String & Attribute.Required;
     isStale: Attribute.Boolean & Attribute.Required & Attribute.DefaultTo<false>;
+    userProgress: Attribute.Relation<
+      "api::email-queue.email-queue",
+      "oneToOne",
+      "api::user-progress.user-progress"
+    >;
     createdAt: Attribute.DateTime;
     updatedAt: Attribute.DateTime;
     createdBy: Attribute.Relation<"api::email-queue.email-queue", "oneToOne", "admin::user"> &
