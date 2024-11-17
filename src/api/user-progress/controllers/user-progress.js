@@ -59,7 +59,7 @@ module.exports = createCoreController("api::user-progress.user-progress", ({ str
     ]);
 
     if (!program || !program.assessment || !userProgress || userProgress.status !== Status.READY) {
-      return ctx.badRequest("Cannot process the request");
+      return ctx.badRequest("Cannot process the request " + auth.id);
     }
 
     const { roughnessResults, breathinessResults } = this.answerService.computeAssessmentResults({
@@ -148,7 +148,7 @@ module.exports = createCoreController("api::user-progress.user-progress", ({ str
     ]);
 
     if (!program || !program.training || !userProgress || userProgress.status !== Status.READY) {
-      return ctx.badRequest("Cannot process the request");
+      return ctx.badRequest("Cannot process the request " + auth.id);
     }
 
     const userSessionsLength = userProgress.sessions.length;
@@ -324,7 +324,7 @@ module.exports = createCoreController("api::user-progress.user-progress", ({ str
     });
     if (!userProgress) {
       strapi.log.error("User progress not found " + auth.id);
-      return ctx.badRequest("Cannot process the request");
+      return ctx.badRequest("Cannot process the request " + auth.id);
     }
 
     const now = dayjs();
