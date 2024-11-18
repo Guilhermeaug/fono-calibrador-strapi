@@ -94,7 +94,7 @@ module.exports = {
           },
         }
       );
-      strapi.log.info(`Found ${usersThatNeedUpdate.length} users to be invalidated`);
+      strapi.log.info(`Found ${usersThatNeedUpdate.length} users to be unlocked`);
 
       await Promise.all(
         usersThatNeedUpdate.map((userProgress) => {

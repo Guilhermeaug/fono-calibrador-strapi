@@ -428,6 +428,7 @@ module.exports = createCoreController("api::user-progress.user-progress", ({ str
     const updatedUserProgress = {};
 
     if (userProgress.status === Status.WAITING) {
+      strapi.log.info("Clearing timeout for user " + userId);
       updatedUserProgress.status = Status.READY;
       updatedUserProgress.timeoutEndDate = null;
     }
