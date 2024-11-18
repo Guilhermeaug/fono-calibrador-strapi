@@ -65,7 +65,9 @@ module.exports = {
           },
         }
       );
-      strapi.log.info(`Found ${usersThatNeedUpdate.length} users to be invalidated`);
+      
+      const usersIds = usersThatNeedUpdate.map((user) => user.id);
+      strapi.log.info(`Invalidated users: ${usersIds.join(", ")}`);
 
       await Promise.all(
         usersThatNeedUpdate.map((userProgress) => {
@@ -74,7 +76,7 @@ module.exports = {
       );
     },
     options: {
-      rule: isTesting ? "*/1 * * * *" : "15 * * * *",
+      rule: isTesting ? "*/1 * * * *" : "10 * * * *",
     },
   },
   unlockUsers: {
@@ -94,7 +96,9 @@ module.exports = {
           },
         }
       );
-      strapi.log.info(`Found ${usersThatNeedUpdate.length} users to be unlocked`);
+     
+      const usersIds = usersThatNeedUpdate.map((user) => user.id);
+      strapi.log.info(`Unlocked users: ${usersIds.join(", ")}`);
 
       await Promise.all(
         usersThatNeedUpdate.map((userProgress) => {
@@ -103,7 +107,7 @@ module.exports = {
       );
     },
     options: {
-      rule: isTesting ? "*/1 * * * *" : "20 * * * *",
+      rule: isTesting ? "*/1 * * * *" : "15 * * * *",
     },
   },
 };
