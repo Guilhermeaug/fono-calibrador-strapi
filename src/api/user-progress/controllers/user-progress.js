@@ -62,6 +62,8 @@ module.exports = createCoreController("api::user-progress.user-progress", ({ str
       return ctx.badRequest("Cannot process the request " + auth.id);
     }
 
+    strapi.log.info("Submitting assessment for user " + auth.id);
+
     const { roughnessResults, breathinessResults } = this.answerService.computeAssessmentResults({
       audios: input.audios,
       assessment: program.assessment,
@@ -150,6 +152,8 @@ module.exports = createCoreController("api::user-progress.user-progress", ({ str
     if (!program || !program.training || !userProgress || userProgress.status !== Status.READY) {
       return ctx.badRequest("Cannot process the request " + auth.id);
     }
+
+    strapi.log.info("Submitting training for user " + auth.id);
 
     const userSessionsLength = userProgress.sessions.length;
     const isLastSession = userSessionsLength === program.numberOfSessions;
