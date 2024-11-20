@@ -340,7 +340,7 @@ module.exports = createCoreController("api::user-progress.user-progress", ({ str
       return ctx.send(updatedUserProgress, 200);
     }
 
-    if (timeoutEndDate && now.isAfter(timeoutEndDate)) {
+    if (timeoutEndDate && userProgress.status === Status.WAITING && now.isAfter(timeoutEndDate)) {
       const updatedUserProgress = await this.userProgressService.unlock(userProgress.id);
       return ctx.send(updatedUserProgress, 200);
     }

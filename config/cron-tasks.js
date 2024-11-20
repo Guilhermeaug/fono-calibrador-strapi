@@ -93,6 +93,9 @@ module.exports = {
             timeoutEndDate: {
               $lte: now,
             },
+            status: {
+              $eq: "WAITING"
+            }
           },
         }
       );

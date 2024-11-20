@@ -23,15 +23,20 @@ module.exports = createCoreService("api::user-progress.user-progress", ({ strapi
       if (userProgress.favoriteFeature === Features.Roughness) {
         if (lastSession.trainingRoughnessStatus === Status.WAITING) {
           return { trainingRoughnessStatus: Status.READY };
+        } else if (lastSession.trainingRoughnessStatus === Status.DONE) {
+          return { trainingBreathinessStatus: Status.READY };
         }
-        return { trainingBreathinessStatus: Status.READY };
       } else if (userProgress.favoriteFeature === Features.Breathiness) {
         if (lastSession.trainingBreathinessStatus === Status.WAITING) {
           return { trainingBreathinessStatus: Status.READY };
+        } else if (lastSession.trainingBreathinessStatus === Status.DONE) {
+          return { trainingRoughnessStatus: Status.READY };
         }
-        return { trainingRoughnessStatus: Status.READY };
       }
-      return { trainingRoughnessStatus: Status.READY, trainingBreathinessStatus: Status.READY };
+      return {
+        trainingRoughnessStatus: lastSession.trainingRoughnessStatus,
+        trainingBreathinessStatus: lastSession.trainingBreathinessStatus,
+      };
     };
 
     const lastSessionIndex = userProgress.sessions.length - 1;
@@ -67,7 +72,7 @@ module.exports = createCoreService("api::user-progress.user-progress", ({ strapi
     return {
       ...userProgress,
       ...updatedUser,
-    }
+    };
   },
 
   invalidate: async (userProgressId) => {
@@ -116,6 +121,6 @@ module.exports = createCoreService("api::user-progress.user-progress", ({ strapi
     return {
       ...userProgress,
       ...updatedUser,
-    }
+    };
   },
 }));
