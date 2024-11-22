@@ -429,58 +429,12 @@ module.exports = createCoreController("api::user-progress.user-progress", ({ str
       },
       populate: ["sessions"],
     });
-    const updatedUserProgress = {};
 
     if (userProgress.status === Status.WAITING) {
       strapi.log.info("Clearing timeout for user " + userId);
-      updatedUserProgress.status = Status.READY;
-      updatedUserProgress.timeoutEndDate = null;
+      this.userProgressService.unlock(userProgress.id);
     }
 
     ctx.status = 200;
-    if (Object.keys(updatedUserProgress).length === 0) {
-      ctx.body = userProgress;
-      return;
-    }
-
-    const lastSessionIndex = userProgress.sessions.length - 1;
-    const lastSession = userProgress.sessions[lastSessionIndex];
-
-    if (lastSession.assessmentStatus === Status.WAITING) {
-      lastSession.assessmentStatus = Status.READY;
-    } else {
-      lastSession.trainingRoughnessStatus =
-        lastSession.trainingRoughnessStatus === Status.WAITING
-          ? Status.READY
-          : lastSession.trainingRoughnessStatus;
-      lastSession.trainingBreathinessStatus =
-        lastSession.trainingBreathinessStatus === Status.WAITING
-          ? Status.READY
-          : lastSession.trainingBreathinessStatus;
-    }
-
-    await strapi.entityService.update(
-      "api::user-session-progress.user-session-progress",
-      lastSession.id,
-      {
-        data: {
-          assessmentStatus: lastSession.assessmentStatus,
-          trainingRoughnessStatus: lastSession.trainingRoughnessStatus,
-          trainingBreathinessStatus: lastSession.trainingBreathinessStatus,
-        },
-      }
-    );
-    const updated = await strapi.entityService.update(
-      "api::user-progress.user-progress",
-      userProgress.id,
-      {
-        data: {
-          status: updatedUserProgress.status,
-          timeoutEndDate: updatedUserProgress.timeoutEndDate,
-        },
-      }
-    );
-
-    ctx.body = updated;
   },
 }));
