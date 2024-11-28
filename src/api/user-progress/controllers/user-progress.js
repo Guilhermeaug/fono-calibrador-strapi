@@ -214,26 +214,26 @@ module.exports = createCoreController("api::user-progress.user-progress", ({ str
 
     const calculateDueDate = () => {
       if (isAnyTrainingWaiting || isAnyTrainingReady) {
-        return dayjs(input.startDate).add(2, "day").toISOString();
+        return dayjs(input.startDate).add(3, "day").toISOString();
       }
       if (areAllStatusFinished && !isLastSession) {
         const lastWeekSessionMarker = lastSession.assessmentRoughnessResults?.startDate
           ? dayjs(lastSession.assessmentRoughnessResults?.startDate)
           : dayjs(getFavoriteFeatureStartDate());
-        return dayjs(lastWeekSessionMarker).add(8, "day").toISOString();
+        return dayjs(lastWeekSessionMarker).add(9, "day").toISOString();
       }
       return null;
     };
 
     const calculateTimeoutEndDate = () => {
       if (isAnyTrainingWaiting) {
-        return [dayjs(input.startDate).add(1, "day").startOf("hour").toISOString(), 1];
+        return [dayjs(input.startDate).add(1, "day").subtract(1, 'hour').toISOString(), 1];
       }
       if (areAllStatusFinished && !isLastSession) {
         const lastWeekSessionMarker = lastSession.assessmentRoughnessResults?.startDate
           ? dayjs(lastSession.assessmentRoughnessResults?.startDate)
           : dayjs(getFavoriteFeatureStartDate());
-        return [dayjs(lastWeekSessionMarker).add(7, "day").startOf("hour").toISOString(), 7];
+        return [dayjs(lastWeekSessionMarker).add(7, "day").subtract(1, "hour").toISOString(), 7];
       }
       return [null, null];
     };
