@@ -27,5 +27,10 @@ module.exports = {
       path: '/users-progress/clearTimeout',
       handler: 'user-progress.clearTimeout',
     },
+    {
+      method: 'POST',
+      path: '/users-progress/revalidateUser',
+      handler: 'user-progress.revalidateUser',
+    },
   ]
 }

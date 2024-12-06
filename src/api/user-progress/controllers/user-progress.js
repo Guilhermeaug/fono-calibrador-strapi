@@ -4,6 +4,7 @@ const { createCoreController } = require("@strapi/strapi").factories;
 
 const { Features } = require("../../../constants");
 const { validateYupSchema } = require("../../../helpers");
+const revalidationClient = require("../../../utils/revalidation-client");
 const { emailTemplateReference } = require("../../email/constants");
 const { Status } = require("../constants");
 const schemas = require("./schemas");
@@ -410,6 +411,34 @@ module.exports = createCoreController("api::user-progress.user-progress", ({ str
 
     ctx.status = 200;
     ctx.body = updated;
+  },
+
+  async revalidateUser(ctx) {
+    const input = ctx.request.body;
+
+    const errors = await validateYupSchema(schemas.revalidateSchema, input);
+    if (errors) {
+      strapi.log.error(errors);
+      return ctx.badRequest(errors);
+    }
+
+    strapi.log.info("Revalidating user " + input.userId);
+
+    const userProgress = await strapi.db.query("api::user-progress.user-progress").findOne({
+      fields: ["id"],
+      where: {
+        program: input.programId,
+        user: input.userId,
+      },
+      populate: {
+        sessions: {
+          fields: ["id"],
+        },
+      },
+    });
+    const updatedUserProgress = await this.userProgressService.revalidate(userProgress.id);
+    revalidationClient.tag([`group-${input.groupId}`])
+    return ctx.send(updatedUserProgress, 200);
   },
 
   async clearTimeout(ctx) {
