@@ -30,6 +30,22 @@ module.exports = {
     return ctx.send({ message: "Email sent" });
   },
 
+  sendTermsEmail: async (ctx) => {
+    const auth = ctx.state.user;
+    if (!auth) {
+      return ctx.unauthorized();
+    }
+
+    const emailService = strapi.services["api::email.email"];
+    await emailService.sendEmailTemplate(auth.email, 7, {
+      user: {
+        name: auth.name,
+      }
+    });
+
+    return ctx.send({ message: "Email sent" });
+  },
+
   sendEmailTemplate: async (ctx, next) => {
     const schema = yup.object().shape({
       templateReferenceId: yup.number().required(),

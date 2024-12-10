@@ -10,6 +10,15 @@ module.exports = {
      },
     },
     {
+      method: 'POST',
+      path: '/email/terms',
+      handler: 'email.sendTermsEmail',
+      config: {
+        policies: [],
+        middlewares: [],
+      },
+     },
+    {
      method: 'POST',
      path: '/email/sendEmailTemplate',
      handler: 'email.sendEmailTemplate',
