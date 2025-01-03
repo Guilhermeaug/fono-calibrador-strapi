@@ -228,15 +228,14 @@ module.exports = createCoreController("api::user-progress.user-progress", ({ str
 
     const calculateTimeoutEndDate = () => {
       if (isAnyTrainingWaiting) {
-        return [dayjs(input.startDate).add(1, "day").subtract(1, 'hour').toISOString(), 1];
+        return dayjs(input.startDate).add(1, "day").subtract(1, 'hour').toISOString()
       }
       if (areAllStatusFinished && !isLastSession) {
         const lastWeekSessionMarker = lastSession.assessmentRoughnessResults?.startDate
           ? dayjs(lastSession.assessmentRoughnessResults?.startDate)
           : dayjs(getFavoriteFeatureStartDate());
-        return [dayjs(lastWeekSessionMarker).add(7, "day").subtract(1, "hour").toISOString(), 7];
+        return dayjs(lastWeekSessionMarker).add(7, "day").subtract(1, "hour").toISOString();
       }
-      return [null, null];
     };
 
     const newUserStatus =
@@ -246,7 +245,7 @@ module.exports = createCoreController("api::user-progress.user-progress", ({ str
         ? Status.READY
         : Status.WAITING;
     const nextDueDate = calculateDueDate();
-    const [timeoutEndDate, totalDaysOfTimeout] = calculateTimeoutEndDate();
+    const timeoutEndDate = calculateTimeoutEndDate();
 
     const needToCreateExtraSession = !isLastSession && areAllStatusFinished;
     let newSessionId;
@@ -268,7 +267,7 @@ module.exports = createCoreController("api::user-progress.user-progress", ({ str
     const { email, name } = auth;
 
     let emailSchedulePromise = Promise.resolve();
-    if (timeoutEndDate && totalDaysOfTimeout) {
+    if (timeoutEndDate) {
       emailSchedulePromise = scheduleEmailToQueue({
         to: email,
         scheduledTime: timeoutEndDate,
