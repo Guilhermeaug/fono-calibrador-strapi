@@ -228,7 +228,7 @@ module.exports = createCoreController("api::user-progress.user-progress", ({ str
 
     const calculateTimeoutEndDate = () => {
       if (isAnyTrainingWaiting) {
-        return dayjs(input.startDate).add(1, "day").subtract(1, 'hour').toISOString()
+        return dayjs(input.startDate).add(1, "day").subtract(1, "hour").toISOString();
       }
       if (areAllStatusFinished && !isLastSession) {
         const lastWeekSessionMarker = lastSession.assessmentRoughnessResults?.startDate
@@ -436,7 +436,7 @@ module.exports = createCoreController("api::user-progress.user-progress", ({ str
       },
     });
     const updatedUserProgress = await this.userProgressService.revalidate(userProgress.id);
-    revalidationClient.tag([`group-${input.groupId}`])
+    revalidationClient.tag([`group-${input.groupId}`]);
     return ctx.send(updatedUserProgress, 200);
   },
 
@@ -450,7 +450,7 @@ module.exports = createCoreController("api::user-progress.user-progress", ({ str
 
     const { programId = 1, userId } = input;
 
-    const userProgress = await strapi.db.query("api::user-progress.user-progress").findOne({
+    let userProgress = await strapi.db.query("api::user-progress.user-progress").findOne({
       where: {
         program: programId,
         user: userId,
@@ -460,9 +460,9 @@ module.exports = createCoreController("api::user-progress.user-progress", ({ str
 
     if (userProgress.status === Status.WAITING) {
       strapi.log.info("Clearing timeout for user " + userId);
-      this.userProgressService.unlock(userProgress.id);
+      userProgress = await this.userProgressService.unlock(userProgress.id);
     }
 
-    ctx.status = 200;
+    return ctx.send(userProgress, 200);
   },
 }));
