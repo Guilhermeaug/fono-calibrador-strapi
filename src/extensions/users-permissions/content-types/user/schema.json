@@ -108,6 +108,10 @@
       "relation": "oneToOne",
       "target": "api::user-progress.user-progress",
       "inversedBy": "user"
+    },
+    "isAdmin": {
+      "type": "boolean",
+      "default": false
     }
   }
 }

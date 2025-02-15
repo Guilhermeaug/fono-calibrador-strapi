@@ -626,6 +626,7 @@ export interface PluginUsersPermissionsUser extends Schema.CollectionType {
       "oneToOne",
       "api::user-progress.user-progress"
     >;
+    isAdmin: Attribute.Boolean & Attribute.DefaultTo<false>;
     createdAt: Attribute.DateTime;
     updatedAt: Attribute.DateTime;
     createdBy: Attribute.Relation<"plugin::users-permissions.user", "oneToOne", "admin::user"> &
