@@ -1,3 +1,5 @@
+const { Status } = require("../../api/user-progress/constants");
+
 module.exports = (plugin) => {
   const register = plugin.controllers.auth.register;
 
@@ -7,39 +9,46 @@ module.exports = (plugin) => {
     const { email, username, password, ...body } = ctx.request.body;
     const { id: userId } = ctx.response._body.user;
 
-    const [additionalData, userSessionProgress] = await Promise.all([
-      strapi.entityService.create("api::additional-data.additional-data", {
+    const additionalData = await strapi.entityService.create(
+      "api::additional-data.additional-data",
+      {
+        data: body,
+      }
+    );
+    const userSessionProgress = await strapi.entityService.create(
+      "api::user-session-progress.user-session-progress",
+      {
         data: {
-          ...body,
+          assessmentStatus: Status.READY,
         },
-      }),
-      strapi.entityService.create("api::user-session-progress.user-session-progress", {
+      }
+    );
+
+    await strapi.entityService.create("api::user-progress.user-progress", {
+      data: {
+        program: 1,
+        user: {
+          connect: [userId],
+        },
+        sessions: { connect: [userSessionProgress.id] },
+      },
+    });
+    const updatedUser = await strapi.entityService.update(
+      "plugin::users-permissions.user",
+      userId,
+      {
         data: {
-          assessmentStatus: "READY",
+          additionalData: { connect: [additionalData.id] },
         },
-      }),
-    ]);
-    const [_, updatedUser] = await Promise.all([
-      strapi.entityService.create("api::user-progress.user-progress", {
-        data: {
-          user: userId,
-          program: 1,
-          sessions: [userSessionProgress.id],
+      }
+    );
+    await strapi.entityService.update("api::group.group", 1, {
+      data: {
+        students: {
+          connect: [userId],
         },
-      }),
-      strapi.entityService.update("plugin::users-permissions.user", userId, {
-        data: {
-          additionalData: additionalData.id,
-        },
-      }),
-      strapi.entityService.update("api::group.group", 1, {
-        data: {
-          students: {
-            connect: [userId],
-          },
-        },
-      }),
-    ]);
+      },
+    });
 
     ctx.response._body.user = updatedUser;
   };
