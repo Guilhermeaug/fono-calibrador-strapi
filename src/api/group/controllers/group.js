@@ -8,10 +8,10 @@ const { createCoreController } = require("@strapi/strapi").factories;
 module.exports = createCoreController("api::group.group", ({ strapi }) => ({
   async find(ctx) {
     const user = ctx.state.user;
-
+  
     ctx.query.filters = {
       ...(ctx.query.filters || {}),
-      teacher: user.id,
+      ...(user.isAdmin ? {} : { teacher: user.id }),
     };
 
     return super.find(ctx);
@@ -31,7 +31,8 @@ module.exports = createCoreController("api::group.group", ({ strapi }) => ({
       });
     }
 
-    if (!entry || entry.teacher.id !== user.id) {
+    const hasAccess = user.isAdmin || (entry && entry.teacher.id === user.id);
+    if (!entry || !hasAccess) {
       return ctx.unauthorized("You are not authorized to access this entry");
     }
 
