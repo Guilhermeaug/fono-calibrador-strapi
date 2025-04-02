@@ -76,7 +76,7 @@ module.exports = {
       );
     },
     options: {
-      rule: isTesting ? "*/1 * * * *" : "10 * * * *",
+      rule: isTesting ? "*/1 * * * *" : "*/5 * * * *",
     },
   },
   unlockUsers: {
@@ -110,7 +110,7 @@ module.exports = {
       );
     },
     options: {
-      rule: isTesting ? "*/1 * * * *" : "15 * * * *",
+      rule: isTesting ? "*/1 * * * *" : "*/5 * * * *",
     },
   },
 };

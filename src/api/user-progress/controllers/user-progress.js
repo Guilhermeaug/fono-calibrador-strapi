@@ -4,7 +4,6 @@ const { createCoreController } = require("@strapi/strapi").factories;
 
 const { Features } = require("../../../constants");
 const { validateYupSchema } = require("../../../helpers");
-const revalidationClient = require("../../../utils/revalidation-client");
 const { emailTemplateReference } = require("../../email/constants");
 const { Status } = require("../constants");
 const schemas = require("./schemas");
@@ -436,7 +435,6 @@ module.exports = createCoreController("api::user-progress.user-progress", ({ str
       },
     });
     const updatedUserProgress = await this.userProgressService.revalidate(userProgress.id);
-    revalidationClient.tag([`group-${input.groupId}`]);
     return ctx.send(updatedUserProgress, 200);
   },
 

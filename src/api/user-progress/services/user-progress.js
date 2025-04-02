@@ -52,7 +52,7 @@ module.exports = createCoreService("api::user-progress.user-progress", ({ strapi
     const updatedUserProgressData = {
       status: Status.READY,
       timeoutEndDate: null,
-    };
+    }
 
     const [updatedUser, updatedSession] = await Promise.all([
       strapi.entityService.update("api::user-progress.user-progress", userProgressId, {
