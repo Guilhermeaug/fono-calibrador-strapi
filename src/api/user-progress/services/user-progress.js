@@ -235,16 +235,18 @@ var self = {
     const lastSessionIndex = userProgress.sessions.length - 1;
     const lastSession = userProgress.sessions[lastSessionIndex];
 
-    const updatedSessionData = {};
+    let updatedSessionData = {};
     if (lastSession.trainingRoughnessStatus === Status.INVALID) {
-      updatedSessionData.trainingRoughnessStatus = Status.READY;
+      updatedSessionData.trainingRoughnessStatus = Status.WAITING;
     }
     if (lastSession.trainingBreathinessStatus === Status.INVALID) {
-      updatedSessionData.trainingBreathinessStatus = Status.READY;
+      updatedSessionData.trainingBreathinessStatus = Status.WAITING;
     }
     if (lastSession.assessmentStatus === Status.INVALID) {
-      updatedSessionData.assessmentStatus = Status.READY;
+      updatedSessionData.assessmentStatus = Status.WAITING;
     }
+
+    updatedSessionData = self._determineUnlockStatusUpdate(userProgress, updatedSessionData);
 
     const updatedUserProgressData = {
       status: Status.READY,
@@ -387,7 +389,12 @@ var self = {
         program: programId,
         user: userId,
       },
-      populate: ["sessions"],
+      populate: {
+        sessions: true,
+        program: {
+          fields: ["id", "numberOfSessions"],
+        },
+      },
     });
 
     if (!userProgress) {
