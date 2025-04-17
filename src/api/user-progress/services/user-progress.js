@@ -246,7 +246,11 @@ var self = {
       updatedSessionData.assessmentStatus = Status.WAITING;
     }
 
-    updatedSessionData = self._determineUnlockStatusUpdate(userProgress, updatedSessionData);
+    const statusToMakeReady = self._determineUnlockStatusUpdate(userProgress, updatedSessionData);
+    updatedSessionData = {
+      ...updatedSessionData,
+      ...statusToMakeReady,
+    };
 
     const updatedUserProgressData = {
       status: Status.READY,
