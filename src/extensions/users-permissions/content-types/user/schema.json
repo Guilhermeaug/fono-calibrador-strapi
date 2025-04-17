@@ -112,6 +112,12 @@
     "isAdmin": {
       "type": "boolean",
       "default": false
+    },
+    "groups": {
+      "type": "relation",
+      "relation": "manyToMany",
+      "target": "api::group.group",
+      "mappedBy": "students"
     }
   }
 }

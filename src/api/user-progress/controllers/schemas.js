@@ -44,6 +44,6 @@ module.exports = {
   revalidateSchema: yup.object().shape({
     userId: yup.number().required(),
     programId: yup.number().required(),
-    groupId: yup.number().required()
+    groupId: yup.number().required(),
   }),
 };

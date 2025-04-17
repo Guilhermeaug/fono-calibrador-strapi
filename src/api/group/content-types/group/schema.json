@@ -19,8 +19,9 @@
     },
     "students": {
       "type": "relation",
-      "relation": "oneToMany",
-      "target": "plugin::users-permissions.user"
+      "relation": "manyToMany",
+      "target": "plugin::users-permissions.user",
+      "inversedBy": "groups"
     },
     "teacher": {
       "type": "relation",

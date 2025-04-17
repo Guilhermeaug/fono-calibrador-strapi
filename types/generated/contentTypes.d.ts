@@ -627,6 +627,7 @@ export interface PluginUsersPermissionsUser extends Schema.CollectionType {
       "api::user-progress.user-progress"
     >;
     isAdmin: Attribute.Boolean & Attribute.DefaultTo<false>;
+    groups: Attribute.Relation<"plugin::users-permissions.user", "manyToMany", "api::group.group">;
     createdAt: Attribute.DateTime;
     updatedAt: Attribute.DateTime;
     createdBy: Attribute.Relation<"plugin::users-permissions.user", "oneToOne", "admin::user"> &
@@ -821,7 +822,11 @@ export interface ApiGroupGroup extends Schema.CollectionType {
   };
   attributes: {
     program: Attribute.Relation<"api::group.group", "oneToOne", "api::program.program">;
-    students: Attribute.Relation<"api::group.group", "oneToMany", "plugin::users-permissions.user">;
+    students: Attribute.Relation<
+      "api::group.group",
+      "manyToMany",
+      "plugin::users-permissions.user"
+    >;
     teacher: Attribute.Relation<"api::group.group", "oneToOne", "plugin::users-permissions.user">;
     name: Attribute.String & Attribute.Required & Attribute.DefaultTo<"Sem nome">;
     createdAt: Attribute.DateTime;
