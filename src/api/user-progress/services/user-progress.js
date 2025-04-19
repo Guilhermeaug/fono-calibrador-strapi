@@ -29,7 +29,7 @@ var self = {
    * @returns {object} The status update object (e.g., { assessmentStatus: Status.READY }) or {}.
    */
   _determineUnlockStatusUpdate: (userProgress, lastSession) => {
-    const { favoriteFeature = "" } = userProgress;
+    const { favoriteFeature } = userProgress;
     const { assessmentStatus, trainingRoughnessStatus, trainingBreathinessStatus } = lastSession;
 
     // 1. Assessment Priority
@@ -155,15 +155,13 @@ var self = {
 
     // Use early return for error case
     if (!userProgress || !userProgress.sessions?.length) {
-      strapi.log.error(`User progress with id ${userProgressId} not found or has no sessions.`);
-      // Consider throwing an error or returning a more specific error indicator
-      return userProgress;
+      throw new Error(`User progress with id ${userProgressId} not found or has no sessions.`);
     }
 
     const lastSessionIndex = userProgress.sessions.length - 1;
     const lastSession = userProgress.sessions[lastSessionIndex];
 
-    // Prepare session data updates, only including statuses that are currently READY
+    // Prepare session data updates, only including statuses that are currently READY or WAITING
     const updatedSessionData = {};
     if (
       lastSession.trainingRoughnessStatus === Status.READY ||
@@ -190,18 +188,27 @@ var self = {
       timeoutEndDate: null,
     };
 
-    // Perform updates concurrently
-    const [updatedUser, updatedSession] = await Promise.all([
-      strapi.entityService.update(CollectionsIdentifier.UserProgress, userProgressId, {
-        data: updatedUserProgressData,
-      }),
-      // Only update session if there are changes
-      Object.keys(updatedSessionData).length > 0
-        ? strapi.entityService.update(CollectionsIdentifier.UserSessionProgress, lastSession.id, {
+    const [updatedUser, updatedSession] = await strapi.db.transaction(async () => {
+      const updatedUP = await strapi.entityService.update(
+        CollectionsIdentifier.UserProgress,
+        userProgressId,
+        {
+          data: updatedUserProgressData,
+        }
+      );
+
+      let updatedSess = lastSession;
+      if (Object.keys(updatedSessionData).length > 0) {
+        updatedSess = await strapi.entityService.update(
+          CollectionsIdentifier.UserSessionProgress,
+          lastSession.id,
+          {
             data: updatedSessionData,
-          })
-        : Promise.resolve(lastSession),
-    ]);
+          }
+        );
+      }
+      return [updatedUP, updatedSess];
+    });
 
     // Update the session in the userProgress object
     userProgress.sessions[lastSessionIndex] = updatedSession;
@@ -230,6 +237,11 @@ var self = {
       const errorMsg = `User progress not found or has no sessions for user ${userId}, program ${programId}. Cannot revalidate.`;
       strapi.log.error(errorMsg);
       throw new Error(errorMsg);
+    }
+
+    if (userProgress.status !== Status.INVALID) {
+      strapi.log.info(`User ${userId} is not in INVALID status. No revalidation needed.`);
+      return userProgress;
     }
 
     const lastSessionIndex = userProgress.sessions.length - 1;
@@ -343,6 +355,11 @@ var self = {
         }
       );
 
+      const oldSessionsLog = oldSessionIds.map((s) => s.id).join(", ");
+
+      strapi.log.info(
+        `User progress ${userProgress.id} updated. Old sessions (${oldSessionsLog}) disconnected, new session connected.`)
+
       // 3. Delete old sessions (if any) after disconnecting them
       // if (oldSessionIds.length > 0) {
       //   await strapi.db.query(CollectionsIdentifier.UserSessionProgress).deleteMany({
@@ -426,4 +443,4 @@ var self = {
   },
 };
 
-module.exports = createCoreService("api::user-progress.user-progress", ({}) => self);
+module.exports = createCoreService("api::user-progress.user-progress", ({ }) => self);

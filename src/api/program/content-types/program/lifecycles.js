@@ -9,6 +9,7 @@ module.exports = {
     const tags = ["programs", `program-${where.id}`];
     revalidationClient.tag(tags);
   },
+
   async afterCreate(event) {
     revalidationClient.tag(["programs"]);
   },

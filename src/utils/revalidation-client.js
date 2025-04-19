@@ -11,6 +11,7 @@ module.exports = {
     const url = `${appUrl}/api/revalidateTags?secret=${revalidateToken}`;
     await axios.post(url, { tags });
   },
+
   async path(path, type) {
     const url = `${appUrl}/api/revalidatePath?secret=${revalidateToken}`;
     await axios.post(url, { path, type });
