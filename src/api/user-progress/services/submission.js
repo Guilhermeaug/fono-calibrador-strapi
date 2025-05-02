@@ -60,6 +60,17 @@ module.exports = ({ strapi }) => ({
   },
 
   /**
+   * Gets the user favorite feature status
+   */
+  _getUserFavoriteFeatureStatus(lastSession, favoriteFeature) {
+    if (favoriteFeature === Features.Roughness) {
+      return lastSession.trainingRoughnessStatus;
+    } else if (favoriteFeature === Features.Breathiness) {
+      return lastSession.trainingBreathinessStatus;
+    }
+  },
+
+  /**
    * Check if all statuses are finished (DONE or NOT_NEEDED)
    * Moved from user-progress controller
    */
@@ -314,6 +325,21 @@ module.exports = ({ strapi }) => ({
     if (lastSessionFromDB.assessmentStatus === Status.READY) {
       strapi.log.warn(`User ${auth.id} attempted training before assessment was DONE.`);
       throw new Error("Assessment must be completed before training for this session.");
+    }
+
+    if (userProgress.favoriteFeature !== null && userProgress.favoriteFeature !== input.feature) {
+      const favoriteFeatureStatus = this._getUserFavoriteFeatureStatus(
+        lastSessionFromDB,
+        userProgress.favoriteFeature
+      );
+      if (favoriteFeatureStatus !== Status.DONE) {
+        strapi.log.warn(
+          `User ${auth.id} attempted training for ${input.feature} before ${userProgress.favoriteFeature} was DONE.`
+        );
+        throw new Error(
+          `Training for ${input.feature} cannot be submitted until ${userProgress.favoriteFeature} is DONE.`
+        );
+      }
     }
 
     const results = this.answerService.computeTrainingResults({
