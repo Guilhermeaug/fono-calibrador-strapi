@@ -60,12 +60,12 @@ module.exports = ({ strapi }) => ({
   },
 
   /**
-   * Gets the user favorite feature status
+   * Gets the user feature status
    */
-  _getUserFavoriteFeatureStatus(lastSession, favoriteFeature) {
-    if (favoriteFeature === Features.Roughness) {
+  _getUserFeatureStatus(lastSession, feature) {
+    if (feature === Features.Roughness) {
       return lastSession.trainingRoughnessStatus;
-    } else if (favoriteFeature === Features.Breathiness) {
+    } else if (feature === Features.Breathiness) {
       return lastSession.trainingBreathinessStatus;
     }
   },
@@ -327,19 +327,15 @@ module.exports = ({ strapi }) => ({
       throw new Error("Assessment must be completed before training for this session.");
     }
 
-    if (userProgress.favoriteFeature !== null && userProgress.favoriteFeature !== input.feature) {
-      const favoriteFeatureStatus = this._getUserFavoriteFeatureStatus(
-        lastSessionFromDB,
-        userProgress.favoriteFeature
+    const featureStatus = this._getUserFeatureStatus(
+      lastSessionFromDB,
+      input.feature
+    );
+    if (featureStatus !== Status.READY) {
+      strapi.log.warn(
+        `User ${auth.id} attempted training for ${input.feature} before it was READY.`
       );
-      if (favoriteFeatureStatus !== Status.DONE) {
-        strapi.log.warn(
-          `User ${auth.id} attempted training for ${input.feature} before ${userProgress.favoriteFeature} was DONE.`
-        );
-        throw new Error(
-          `Training for ${input.feature} cannot be submitted until ${userProgress.favoriteFeature} is DONE.`
-        );
-      }
+      throw new Error(`Training for ${input.feature} is not ready.`);
     }
 
     const results = this.answerService.computeTrainingResults({
